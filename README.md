@@ -188,15 +188,21 @@ npm --prefix apps/api run seed
 
 ## 🐳 Chạy toàn bộ bằng Docker Compose
 
-Để đóng gói và chạy cả 3 dịch vụ (`db`, `backend`, `frontend`) trong Docker:
+Để đóng gói và chạy cả 3 dịch vụ (`db`, `backend`, `frontend`) trong Docker, đặt `JWT_SECRET` dài ít nhất 32 ký tự trong `.env` ở thư mục gốc (xem [`.env.example`](.env.example)) hoặc trong `apps/api/.env`, rồi chạy:
 
 ```powershell
-docker compose up --build -d
+docker compose up --build -d --wait
 docker compose ps
-docker compose logs -f
 ```
 
-- Container `backend` tự động áp dụng các bản migration đã commit trước khi khởi động server và nạp `JWT_SECRET` từ `apps/api/.env` (hoặc `.env` ở thư mục gốc). Hãy đảm bảo `JWT_SECRET` có tối thiểu 32 ký tự trước khi chạy.
+Với database mới, nạp menu và dữ liệu mẫu trước khi mở [giao diện BrewLite](http://localhost:3000):
+
+```powershell
+docker compose exec -T backend npm run build:seed
+docker compose exec -T backend npm run seed
+```
+
+- Container `backend` tự động áp dụng các bản migration đã commit trước khi khởi động API.
 - Dữ liệu PostgreSQL được lưu trong volume của project `brewlite-assignment-2` (tách biệt hoàn toàn với volume cũ). Lệnh `docker compose down` chỉ dừng các dịch vụ mà không làm mất dữ liệu trong volume.
 - Khi thay đổi `NEXT_PUBLIC_API_URL` trong [`docker-compose.yml`](docker-compose.yml), cần chạy lại kèm cờ `--build` vì biến môi trường của Next.js client được nhúng vào lúc build.
 
