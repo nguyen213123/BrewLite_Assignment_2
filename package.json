@@ -1,0 +1,35 @@
+{
+  "name": "brewlite",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "setup": "npm --prefix apps/api ci && npm --prefix apps/web ci",
+    "dev": "concurrently -k -n api,web \"npm --prefix apps/api run start:dev\" \"npm --prefix apps/web run dev\"",
+    "build": "npm --prefix apps/api run build && npm --prefix apps/web run build",
+    "lint": "npm --prefix apps/api run lint && node apps/api/node_modules/eslint/bin/eslint.js --config apps/api/eslint.config.mjs tests/api --max-warnings 0 && npm --prefix apps/web run lint",
+    "test": "npm --prefix apps/api test && npm --prefix apps/web test",
+    "test:db": "node tests/tools/test-checkout-db.cjs",
+    "stripe:listen": "node apps/api/tools/stripe-listener.cjs",
+    "qa:up": "node tests/tools/qa-stack.cjs up",
+    "qa:down": "node tests/tools/qa-stack.cjs down",
+    "qa:status": "node tests/tools/qa-stack.cjs status",
+    "qa:benchmark": "node tests/tools/benchmark-api.cjs",
+    "docs:check": "node apps/api/tools/check-contract.mjs",
+    "docs:schema": "npm --prefix apps/api run prisma:validate -- --schema ../../docs/diagrams/schema.prisma",
+    "api:types": "node apps/api/tools/generate-api-types.mjs",
+    "api:check": "node apps/api/tools/generate-api-types.mjs --check",
+    "db:generate": "npm --prefix apps/api run prisma:generate",
+    "db:migrate": "npm --prefix apps/api run prisma:migrate --",
+    "db:studio": "npm --prefix apps/api run prisma:studio"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "concurrently": "^9.2.1",
+    "js-yaml": "^4.3.2"
+  }
+}

@@ -1,0 +1,536 @@
+// Owner: TV3 — #7/#8. quote/create: Issue #7. cancel/transition: Issue #8.
+import { Injectable, Optional } from '@nestjs/common';
+import {
+  CatalogPricingPort,
+  IdempotencyPort,
+  InventoryPort,
+  LoyaltyTransactionsPort,
+  OrderTransactionsPort,
+  OrdersPort,
+  PromotionRulesPort,
+} from '../../common/contracts/ports';
+import type { IdempotentResult, PromotionSnapshot, Tx } from '../../common/contracts/ports';
+import type * as Api from '../../common/contracts/api.generated';
+import { UnitOfWork } from '../../common/database/unit-of-work';
+import { ApiError } from '../../common/errors/api-error';
+import { PrismaService } from '../../prisma/prisma.service';
+import {
+  formatVnPayDate,
+  VnPayService,
+} from '../payments/vnpay.service';
+import { StripeService } from '../payments/stripe.service';
+import { buildQuote, generateOrderCode, normalizeCartItems } from './domain/order-pricing';
+import { toApiOrder } from './order.mapper';
+
+const STAFF_STATUSES: readonly Api.OrderStatus[] = ['PREPARING', 'READY', 'COMPLETED'];
+
+@Injectable()
+export class OrdersService implements OrdersPort {
+  constructor(
+    private readonly unitOfWork: UnitOfWork,
+    private readonly catalog: CatalogPricingPort,
+    private readonly promotions: PromotionRulesPort,
+    private readonly idempotency: IdempotencyPort,
+    private readonly transitions: OrderTransactionsPort,
+    private readonly loyalty: LoyaltyTransactionsPort,
+    private readonly inventory: InventoryPort,
+    @Optional() private readonly prisma?: PrismaService,
+    @Optional() private readonly vnpay?: VnPayService,
+    @Optional() private readonly stripe?: StripeService,
+  ) {}
+
+  // Preview only: no order, no stock hold and no promotion counter change (business-rules §2.7).
+  async quote(_userId: string, input: Api.OrderRequest): Promise<Api.Quote> {
+    const items = normalizeCartItems(input.items);
+    return this.unitOfWork.run(async tx => {
+      const { quote } = await this.priceCart(tx, items, input.promotionCode);
+      await this.inventory.check(tx, items);
+      return quote;
+    });
+  }
+
+  // userId always comes from the JWT; prices always come from the catalog, never from the client.
+  create(userId: string, key: string, input: Api.OrderRequest): Promise<IdempotentResult<Api.Order>> {
+    const items = normalizeCartItems(input.items);
+    return this.idempotency.execute(
+      {
+        userId,
+        scope: 'CREATE_ORDER',
+        key,
+        payload: { items, promotionCode: input.promotionCode ?? null },
+        httpStatus: 201,
+      },
+      async tx => {
+        const { quote, promo } = await this.priceCart(tx, items, input.promotionCode);
+        if (promo.promotionId) await this.promotions.reserve(tx, promo.promotionId);
+        const order = await tx.order.create({
+          data: {
+            code: generateOrderCode(),
+            userId,
+            promotionId: promo.promotionId,
+            promotionCode: quote.promotionCode,
+            subtotal: quote.subtotal,
+            discount: quote.discount,
+            total: quote.total,
+            status: 'PENDING',
+            reservationStatus: 'HELD',
+            version: 0,
+            items: {
+              create: quote.items.map(item => ({
+                productId: item.productId,
+                productName: item.productName,
+                size: item.size,
+                sizePrice: item.sizePrice,
+                unitPrice: item.unitPrice,
+                qty: item.qty,
+                lineTotal: item.lineTotal,
+                toppings: {
+                  create: item.toppings.map(topping => ({ toppingId: topping.id, name: topping.name, price: topping.price })),
+                },
+              })),
+            },
+          },
+          include: { items: { include: { toppings: true } } },
+        });
+        await this.inventory.reserve(tx, order.id, items);
+        await tx.orderEvent.create({
+          data: { orderId: order.id, actorUserId: userId, fromStatus: null, toStatus: 'PENDING', orderVersion: order.version },
+        });
+        return toApiOrder(order);
+      },
+    );
+  }
+
+  // Customer cancel (PENDING / PAYMENT_FAILED / PAID). expectedVersion is required: a stale one is 409, and cancelling an
+  // already CANCELLED order with its current version is a 200 that changes nothing (no second release/refund/reverse).
+  // Đối với đơn PAID đã thanh toán qua VNPay, bắt buộc đi qua quy trình hoàn tiền VNPay và xác minh chữ ký trước khi hủy đơn.
+  async cancel(userId: string, orderId: string, expectedVersion: number): Promise<Api.Order> {
+    if (this.prisma && typeof this.prisma.order?.findFirst === 'function' && this.vnpay) {
+      const existingOrder = await this.prisma.order.findFirst({
+        where: { id: orderId, userId },
+        include: {
+          user: true,
+          items: { include: { toppings: true } },
+          payments: {
+            where: { status: { in: ['SUCCEEDED', 'REFUNDED'] }, isDuplicate: false },
+            include: { idempotency: true },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+      });
+
+      const vnpayPayment = existingOrder?.payments?.[0];
+      const vnpayMeta = (vnpayPayment?.idempotency?.response ?? {}) as Record<string, unknown>;
+      const isVnPayOrder =
+        Boolean(existingOrder && vnpayPayment) &&
+        (vnpayMeta.provider === 'VNPAY' ||
+          vnpayMeta.provider === 'STRIPE' ||
+          vnpayPayment!.idempotencyKey.includes('_ST_') ||
+          vnpayPayment!.idempotencyKey.startsWith(`${existingOrder!.code}_`) ||
+          vnpayPayment!.idempotencyKey.startsWith('cs_test_'));
+
+      if (existingOrder && vnpayPayment && isVnPayOrder) {
+        if (existingOrder.status === 'CANCELLED') {
+          if (existingOrder.version === expectedVersion) {
+            return toApiOrder(existingOrder);
+          }
+          throw new ApiError(409, 'ORDER_VERSION_CONFLICT', 'Đơn hàng đã thay đổi, vui lòng tải lại');
+        }
+
+        if (vnpayMeta.provider === 'STRIPE') {
+          if (!this.stripe) throw new ApiError(503, 'STRIPE_CONFIG_MISSING', 'Cổng Stripe chưa được cấu hình');
+          if (existingOrder.status !== 'PAID') {
+            throw new ApiError(409, 'INVALID_ORDER_TRANSITION', 'Chỉ có thể hủy đơn đã thanh toán trước khi pha chế');
+          }
+          if (existingOrder.version !== expectedVersion) {
+            throw new ApiError(409, 'ORDER_VERSION_CONFLICT', 'Đơn hàng đã thay đổi, vui lòng tải lại');
+          }
+          // A completed free checkout has no PaymentIntent and no money to refund.
+          if (existingOrder.total === 0 && vnpayPayment.amount === 0) {
+            return this.unitOfWork.run(async tx => {
+              await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId}::uuid FOR UPDATE`;
+              const current = await this.transitions.loadOwned(tx, userId, orderId);
+              if (current.status === 'CANCELLED') {
+                if (current.version !== expectedVersion) throw new ApiError(409, 'ORDER_VERSION_CONFLICT', 'Đơn hàng đã thay đổi, vui lòng tải lại');
+                return toApiOrder(current);
+              }
+              const cancelled = await this.transitions.transition(tx, {
+                orderId, actorUserId: userId, expectedVersion, toStatus: 'CANCELLED',
+              });
+              await tx.payment.update({ where: { id: vnpayPayment.id }, data: { status: 'REFUNDED' } });
+              await this.loyalty.reverse(tx, current);
+              await tx.idempotencyRecord.update({ where: { id: vnpayPayment.idempotencyRecordId }, data: {
+                httpStatus: 200, response: { ...vnpayMeta, refundStatus: 'NOT_REQUIRED', requiresManualReview: false },
+              } });
+              return toApiOrder(cancelled);
+            });
+          }
+          if (vnpayMeta.refundStatus === 'PENDING_RECONCILIATION' && !vnpayMeta.refundId) {
+            throw new ApiError(409, 'REFUND_PENDING_RECONCILIATION', 'Yêu cầu hoàn tiền chưa rõ kết quả; cần nhân viên đối soát trước khi gửi lại.');
+          }
+          await this.unitOfWork.run(async tx => {
+            await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId}::uuid FOR UPDATE`;
+            const current = await this.transitions.loadOwned(tx, userId, orderId);
+            const payment = await tx.payment.findUnique({ where: { id: vnpayPayment.id } });
+            if (payment?.status === 'REFUNDED') throw new ApiError(409, 'PAYMENT_ALREADY_REFUNDED', 'Giao dịch đã hoàn tiền');
+            const freshAttempt = await tx.idempotencyRecord.findUnique({ where: { id: vnpayPayment.idempotencyRecordId } });
+            const freshMeta = (freshAttempt?.response ?? {}) as Record<string, unknown>;
+            if (freshAttempt?.httpStatus === 201 &&
+                (!freshMeta.refundId || freshMeta.refundId !== vnpayMeta.refundId)) {
+              throw new ApiError(409, 'REFUND_PENDING_RECONCILIATION', 'Yêu cầu hoàn tiền đang xử lý; vui lòng tải lại trước khi kiểm tra tiếp.');
+            }
+            if (current.version !== expectedVersion || current.status !== 'PAID') {
+              throw new ApiError(409, 'ORDER_VERSION_CONFLICT', 'Đơn hàng đã thay đổi, vui lòng tải lại');
+            }
+            await tx.idempotencyRecord.update({
+              where: { id: vnpayPayment.idempotencyRecordId },
+              data: { httpStatus: 201, response: { ...vnpayMeta, refundStatus: 'PENDING_RECONCILIATION' } },
+            });
+          });
+          // Persist a pending marker before the external call. Repeated POSTs share the same Stripe key;
+          // once a refund ID is known, retries only retrieve its current status.
+          const refundResult = await this.stripe.refundPayment({
+            paymentIntentId: typeof vnpayMeta.paymentIntentId === 'string' ? vnpayMeta.paymentIntentId : undefined,
+            amount: vnpayPayment.amount, idempotencyKey: `stripe-refund-${vnpayPayment.id}`,
+            refundId: typeof vnpayMeta.refundId === 'string' ? vnpayMeta.refundId : undefined,
+          });
+          const refundMeta = {
+            ...vnpayMeta,
+            ...(refundResult.refundId ? { refundId: refundResult.refundId } : {}),
+          };
+          if (refundResult.outcome !== 'SUCCESS') {
+            const uncertain = refundResult.outcome === 'UNCERTAIN';
+            await this.prisma.idempotencyRecord.updateMany({
+              where: { id: vnpayPayment.idempotencyRecordId, httpStatus: 201 },
+              data: { httpStatus: uncertain ? 201 : 200, response: {
+                ...refundMeta, refundStatus: uncertain ? 'PENDING_RECONCILIATION' : 'FAILED',
+                requiresManualReview: uncertain && !refundResult.refundId,
+              } },
+            });
+            throw new ApiError(uncertain ? 409 : 502,
+              uncertain ? 'REFUND_PENDING_RECONCILIATION' : 'STRIPE_REFUND_FAILED',
+              uncertain ? 'Stripe chưa xác nhận hoàn tiền xong. Đơn và kho được giữ nguyên; vui lòng kiểm tra lại sau.'
+                : refundResult.message || 'Stripe từ chối hoàn tiền');
+          }
+          try {
+            return await this.unitOfWork.run(async tx => {
+              await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId}::uuid FOR UPDATE`;
+              const current = await this.transitions.loadOwned(tx, userId, orderId);
+              const cancelled = current.status === 'PAID'
+                ? await this.transitions.transition(tx, {
+                    orderId, actorUserId: userId, expectedVersion: current.version, toStatus: 'CANCELLED',
+                  }) : current;
+              await tx.payment.update({ where: { id: vnpayPayment.id }, data: { status: 'REFUNDED' } });
+              await this.loyalty.reverse(tx, current);
+              const late = cancelled.status !== 'CANCELLED';
+              await tx.idempotencyRecord.update({
+                where: { id: vnpayPayment.idempotencyRecordId },
+                data: { httpStatus: 200, response: {
+                  ...refundMeta, refundStatus: late ? 'REFUNDED_LATE_MANUAL_REVIEW' : 'REFUNDED',
+                  requiresManualReview: late,
+                } },
+              });
+              return toApiOrder(cancelled);
+            });
+          } catch (error) {
+            await this.prisma.idempotencyRecord.updateMany({
+              where: { id: vnpayPayment.idempotencyRecordId, httpStatus: 201 },
+              data: { httpStatus: 201, response: { ...refundMeta, refundStatus: 'PENDING_RECONCILIATION' } },
+            });
+            throw error;
+          }
+        }
+        if (
+          vnpayMeta.refundStatus === 'PENDING_RECONCILIATION' ||
+          vnpayPayment.idempotency?.httpStatus === 201
+        ) {
+          throw new ApiError(
+            409,
+            'REFUND_PENDING_RECONCILIATION',
+            'Đơn hàng đang được hoàn tiền, xin khách hàng vui lòng chờ kiểm tra.',
+          );
+        }
+
+        if (existingOrder.status === 'PAID') {
+          if (existingOrder.version !== expectedVersion) {
+            throw new ApiError(409, 'ORDER_VERSION_CONFLICT', 'Đơn hàng đã thay đổi, vui lòng tải lại');
+          }
+
+          if (vnpayPayment.status === 'REFUNDED') {
+            throw new ApiError(409, 'PAYMENT_ALREADY_REFUNDED', 'Giao dịch này đã được hoàn tiền trước đó');
+          }
+
+          await this.unitOfWork.run(async (tx) => {
+            const current = await this.transitions.loadOwned(tx, userId, orderId);
+            if (current.version !== expectedVersion) {
+              throw new ApiError(409, 'ORDER_VERSION_CONFLICT', 'Đơn hàng đã thay đổi, vui lòng tải lại');
+            }
+            if (current.status !== 'PAID') {
+              throw new ApiError(
+                409,
+                'INVALID_ORDER_TRANSITION',
+                `Không thể hủy và hoàn tiền đơn hàng đang ở trạng thái ${current.status}`,
+              );
+            }
+
+            const lock = await this.prisma!.idempotencyRecord.updateMany({
+              where: {
+                id: vnpayPayment.idempotencyRecordId,
+                status: 'COMPLETED',
+                httpStatus: 200,
+              },
+              data: {
+                httpStatus: 201,
+              },
+            });
+
+            if (lock.count !== 1) {
+              throw new ApiError(
+                409,
+                'REFUND_IN_PROGRESS',
+                'Đơn hàng đang được hoàn tiền, xin khách hàng vui lòng chờ kiểm tra.',
+              );
+            }
+
+            await this.prisma!.idempotencyRecord.update({
+              where: { id: vnpayPayment.idempotencyRecordId },
+              data: {
+                status: 'COMPLETED',
+                httpStatus: 201,
+                response: {
+                  ...vnpayMeta,
+                  refundStatus: 'PENDING_RECONCILIATION',
+                },
+              },
+            });
+          });
+
+          const txnRef =
+            typeof vnpayMeta.txnRef === 'string' && vnpayMeta.txnRef.length > 0
+              ? vnpayMeta.txnRef
+              : vnpayPayment.idempotencyKey;
+          const transactionNo =
+            typeof vnpayMeta.transactionNo === 'string' && vnpayMeta.transactionNo.length > 0
+              ? vnpayMeta.transactionNo
+              : vnpayPayment.id.slice(0, 8);
+          const payDate =
+            typeof vnpayMeta.payDate === 'string' && vnpayMeta.payDate.length > 0
+              ? vnpayMeta.payDate
+              : formatVnPayDate(vnpayPayment.createdAt);
+
+          const gatewayResult = await this.vnpay.refundTransaction({
+            txnRef,
+            transactionDate: payDate,
+            orderCode: existingOrder.code,
+            amount: vnpayPayment.amount,
+            transactionNo,
+            createBy: existingOrder.user.email,
+            ipAddr: '127.0.0.1',
+          });
+
+          if (gatewayResult.outcome === 'UNCERTAIN') {
+            await this.prisma.idempotencyRecord.update({
+              where: { id: vnpayPayment.idempotencyRecordId },
+              data: {
+                status: 'COMPLETED',
+                httpStatus: 201,
+                response: {
+                  ...vnpayMeta,
+                  refundStatus: 'PENDING_RECONCILIATION',
+                  lastRefundResponseCode: gatewayResult.vnp_ResponseCode,
+                  lastRefundMessage: gatewayResult.vnp_Message,
+                  lastGatewayResponseCode: gatewayResult.gatewayResponseCode ?? null,
+                  lastGatewayMessage: gatewayResult.gatewayMessage ?? null,
+                },
+              },
+            });
+
+            throw new ApiError(
+              502,
+              'VNPAY_REFUND_UNCERTAIN',
+              'Đơn hàng đang được hoàn tiền, xin khách hàng vui lòng chờ kiểm tra.',
+            );
+          }
+
+          if (gatewayResult.outcome === 'REJECTED') {
+            await this.prisma.idempotencyRecord.update({
+              where: { id: vnpayPayment.idempotencyRecordId },
+              data: {
+                status: 'COMPLETED',
+                httpStatus: 200,
+                response: {
+                  ...vnpayMeta,
+                  refundStatus: 'FAILED',
+                  lastRefundResponseCode: gatewayResult.vnp_ResponseCode,
+                  lastRefundMessage: gatewayResult.vnp_Message,
+                },
+              },
+            });
+
+            throw new ApiError(
+              502,
+              'VNPAY_REFUND_FAILED',
+              `Cổng VNPay từ chối hoàn tiền: ${gatewayResult.vnp_Message} (Mã: ${gatewayResult.vnp_ResponseCode})`,
+            );
+          }
+
+          try {
+            return await this.unitOfWork.run(async (tx) => {
+              const order = await this.transitions.loadOwned(tx, userId, orderId);
+              if (order.status === 'PAID') {
+                const cancelled = await this.transitions.transition(tx, {
+                  orderId,
+                  actorUserId: userId,
+                  expectedVersion: order.version,
+                  toStatus: 'CANCELLED',
+                });
+                await tx.payment.update({
+                  where: { id: vnpayPayment.id },
+                  data: { status: 'REFUNDED' },
+                });
+                await this.loyalty.reverse(tx, order);
+                await tx.idempotencyRecord.update({
+                  where: { id: vnpayPayment.idempotencyRecordId },
+                  data: {
+                    status: 'COMPLETED',
+                    httpStatus: 200,
+                    response: {
+                      ...vnpayMeta,
+                      refundStatus: 'REFUNDED',
+                      requiresManualReview: false,
+                      refundTransactionNo: gatewayResult.vnp_TransactionNo,
+                      refundResponseCode: gatewayResult.vnp_ResponseCode,
+                    },
+                  },
+                });
+                return toApiOrder(cancelled);
+              }
+
+              if (order.status === 'CANCELLED') {
+                await tx.payment.update({
+                  where: { id: vnpayPayment.id },
+                  data: { status: 'REFUNDED' },
+                });
+                await tx.idempotencyRecord.update({
+                  where: { id: vnpayPayment.idempotencyRecordId },
+                  data: {
+                    status: 'COMPLETED',
+                    httpStatus: 200,
+                    response: {
+                      ...vnpayMeta,
+                      refundStatus: 'REFUNDED',
+                      requiresManualReview: false,
+                      refundTransactionNo: gatewayResult.vnp_TransactionNo,
+                      refundResponseCode: gatewayResult.vnp_ResponseCode,
+                    },
+                  },
+                });
+                return toApiOrder(order);
+              }
+
+              // Xác nhận hoàn tiền đến muộn khi đơn đã chuyển sang PREPARING / READY / COMPLETED:
+              // Không cưỡng ép hủy đơn đang pha chế trái quy tắc; ghi nhận thanh toán REFUNDED,
+              // đảo điểm thưởng (nếu có), đánh dấu ngoại lệ cần nhân viên xử lý và trả đúng trạng thái thực tế của đơn.
+              await tx.payment.update({
+                where: { id: vnpayPayment.id },
+                data: { status: 'REFUNDED' },
+              });
+              await this.loyalty.reverse(tx, order);
+              await tx.idempotencyRecord.update({
+                where: { id: vnpayPayment.idempotencyRecordId },
+                data: {
+                  status: 'COMPLETED',
+                  httpStatus: 200,
+                  response: {
+                    ...vnpayMeta,
+                    refundStatus: 'REFUNDED_LATE_MANUAL_REVIEW',
+                    requiresManualReview: true,
+                    lateRefundOrderStatus: order.status,
+                    refundTransactionNo: gatewayResult.vnp_TransactionNo,
+                    refundResponseCode: gatewayResult.vnp_ResponseCode,
+                  },
+                },
+              });
+              return toApiOrder(order);
+            });
+          } catch (error) {
+            await this.prisma.idempotencyRecord.update({
+              where: { id: vnpayPayment.idempotencyRecordId },
+              data: {
+                status: 'COMPLETED',
+                httpStatus: 201,
+                response: {
+                  ...vnpayMeta,
+                  refundStatus: 'PENDING_RECONCILIATION',
+                },
+              },
+            });
+            throw error;
+          }
+        }
+      }
+    }
+
+    return this.unitOfWork.run(async tx => {
+      const order = await this.transitions.loadOwned(tx, userId, orderId);
+      if (order.status === 'CANCELLED' && order.version === expectedVersion) return toApiOrder(order);
+      const cancelled = await this.transitions.transition(tx, { orderId, actorUserId: userId, expectedVersion, toStatus: 'CANCELLED' });
+      if (order.status === 'PAID') {
+        // Mock refund + point reversal commit or roll back together with the cancellation and the stock/promo release.
+        await tx.payment.updateMany({ where: { orderId, status: 'SUCCEEDED' }, data: { status: 'REFUNDED' } });
+        await this.loyalty.reverse(tx, order);
+      }
+      return toApiOrder(cancelled);
+    });
+  }
+
+  // STAFF only (guard on the controller): PAID -> PREPARING -> READY -> COMPLETED, no skipped steps.
+  async transition(staffId: string, orderId: string, input: Api.StatusRequest): Promise<Api.Order> {
+    if (!STAFF_STATUSES.includes(input.status)) {
+      throw new ApiError(409, 'INVALID_ORDER_TRANSITION', `Không thể chuyển sang ${input.status} bằng endpoint này`);
+    }
+    if (this.prisma) {
+      const existingOrder = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { payments: { include: { idempotency: true } } },
+      });
+      const pendingRefund = existingOrder?.payments.some((p) => {
+        const meta = (p.idempotency?.response ?? {}) as Record<string, unknown>;
+        return meta.refundStatus === 'PENDING_RECONCILIATION' || p.idempotency?.httpStatus === 201;
+      });
+      if (pendingRefund) {
+        throw new ApiError(
+          409,
+          'REFUND_PENDING_RECONCILIATION',
+          'Đơn hàng đang có yêu cầu hoàn tiền VNPay chờ đối soát, không thể chuyển trạng thái pha chế trước khi đối soát xong',
+        );
+      }
+    }
+    return this.unitOfWork.run(async tx => {
+      const updated = await this.transitions.transition(tx, {
+        orderId,
+        actorUserId: staffId,
+        expectedVersion: input.expectedVersion,
+        toStatus: input.status,
+      });
+      if (input.status === 'COMPLETED') {
+        const refunded = await tx.payment.findFirst({ where: { orderId, status: 'REFUNDED', isDuplicate: false } });
+        if (!refunded) await this.loyalty.earn(tx, updated);
+      }
+      return toApiOrder(updated);
+    });
+  }
+
+  // Shared by quote and create so both use the same formula: catalog price -> subtotal -> promotion -> total.
+  private async priceCart(
+    tx: Tx,
+    items: Api.CartItem[],
+    promotionCode: string | undefined,
+  ): Promise<{ quote: Api.Quote; promo: PromotionSnapshot }> {
+    const resolved = await this.catalog.resolve(tx, items);
+    const subtotal = buildQuote(resolved, { promotionId: null, promotionCode: null, discount: 0 }).subtotal;
+    const promo = await this.promotions.price(tx, promotionCode, subtotal);
+    return { quote: buildQuote(resolved, promo), promo };
+  }
+}
