@@ -173,6 +173,10 @@ export class AuthService implements AuthPort, IdentityPort, OnModuleInit {
         throw new ApiError(401, 'UNAUTHORIZED', 'Người dùng không tồn tại');
       }
 
+      if (decoded.role !== dbUser.role) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Quyền tài khoản đã thay đổi, vui lòng đăng nhập lại');
+      }
+
       if ((dbUser as { active?: boolean }).active === false) {
         throw new ApiError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa');
       }

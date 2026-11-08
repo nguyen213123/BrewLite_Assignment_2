@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ApiError } from '../../common/errors/api-error';
+import { MAX_ADMIN_INTEGER } from './dto/auth.dto';
 import type {
   AdminCreatePromotionDto,
   AdminUpdateIngredientDto,
@@ -49,7 +50,10 @@ export class AdminService {
     ]);
 
     const allOrdersAgg = await this.prisma.order.findMany({
-      select: { status: true, total: true },
+      select: { status: true, payments: {
+        where: { status: 'SUCCEEDED', isDuplicate: false },
+        select: { amount: true },
+      } },
     });
 
     let totalRevenue = 0;
@@ -66,7 +70,7 @@ export class AdminService {
     for (const o of allOrdersAgg) {
       ordersByStatus[o.status] = (ordersByStatus[o.status] ?? 0) + 1;
       if ((PAID_ORDER_STATUSES as readonly string[]).includes(o.status)) {
-        totalRevenue += o.total;
+        totalRevenue += o.payments.reduce((sum, payment) => sum + payment.amount, 0);
       }
     }
 
@@ -191,9 +195,13 @@ export class AdminService {
         if (diff !== 0) {
           const sizes = await tx.productSize.findMany({ where: { productId: id } });
           for (const size of sizes) {
+            const nextPrice = Math.max(0, size.price + diff);
+            if (nextPrice > MAX_ADMIN_INTEGER) {
+              throw new ApiError(400, 'VALIDATION_ERROR', 'Giá sau điều chỉnh vượt giới hạn cho phép của một size');
+            }
             await tx.productSize.update({
               where: { id: size.id },
-              data: { price: Math.max(0, size.price + diff) },
+              data: { price: nextPrice },
             });
           }
         }

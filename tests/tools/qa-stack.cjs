@@ -38,7 +38,8 @@ function writeConfig() {
       backend: {
         build: { context: path.join(root, 'apps', 'api') },
         environment: { PORT: '3001', JWT_SECRET: randomBytes(32).toString('hex'), FRONTEND_URL: 'http://localhost:3400',
-          DATABASE_URL: 'postgresql://brewlite:brewlite_dev@db:5432/brewlite?schema=public' },
+          DATABASE_URL: 'postgresql://brewlite:brewlite_dev@db:5432/brewlite?schema=public',
+          SEED_ADMIN_PASSWORD: randomBytes(24).toString('hex'), SEED_STAFF_PASSWORD: randomBytes(24).toString('hex') },
         ports: ['127.0.0.1:3401:3001'], depends_on: { db: { condition: 'service_healthy' } },
       },
       frontend: {

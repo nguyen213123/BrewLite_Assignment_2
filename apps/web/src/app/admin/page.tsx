@@ -8,6 +8,7 @@ import { getAuthSnapshot, getAuthServerSnapshot, subscribeAuth } from '@/lib/aut
 import OrderStatusBadge from '@/components/OrderStatusBadge';
 import type { OrderStatus } from '@/lib/contracts/api.generated';
 import { formatVnd } from '@/lib/format';
+import { MAX_ADMIN_QUANTITY, parseAdminQuantity } from '@/lib/admin-input';
 
 type AdminTab = 'staff' | 'overview' | 'catalog' | 'inventory' | 'promotions';
 
@@ -340,9 +341,10 @@ function AdminPortalContent() {
     if (busyItemId) return;
     const raw = priceDrafts[product.id];
     if (raw === undefined) return;
-    const parsed = Number(raw);
-    if (!Number.isInteger(parsed) || parsed < 0) {
-      setError('Giá bán phải là số nguyên không âm (VNĐ).');
+    const maxPrice = MAX_ADMIN_QUANTITY - Math.max(0, ...product.sizes.map((size) => size.price - product.price));
+    const parsed = parseAdminQuantity(raw, maxPrice);
+    if (parsed === null) {
+      setError(`Giá bán phải là số nguyên từ 0 đến ${formatVnd(maxPrice)}.`);
       return;
     }
     setBusyItemId(product.id);
@@ -385,10 +387,11 @@ function AdminPortalContent() {
     }
   }
 
-  async function handleUpdateIngredientStock(ing: AdminIngredientItem, newStock: number) {
+  async function handleUpdateIngredientStock(ing: AdminIngredientItem, newStock: string | number) {
     if (busyItemId) return;
-    if (!Number.isInteger(newStock) || newStock < 0) {
-      setError('Số lượng tồn kho phải là số nguyên không âm.');
+    const parsedStock = parseAdminQuantity(newStock);
+    if (parsedStock === null) {
+      setError(`Tồn kho phải là số nguyên từ 0 đến ${MAX_ADMIN_QUANTITY.toLocaleString('vi-VN')}.`);
       return;
     }
     setBusyItemId(ing.id);
@@ -400,7 +403,7 @@ function AdminPortalContent() {
         version: number;
         lowStock: boolean;
         updatedAt: string;
-      }>(`/auth/admin/ingredients/${ing.id}`, { stock: newStock, expectedVersion: ing.version });
+      }>(`/auth/admin/ingredients/${ing.id}`, { stock: parsedStock, expectedVersion: ing.version });
       setIngredients((prev) =>
         prev.map((item) =>
           item.id === updated.id
@@ -429,8 +432,8 @@ function AdminPortalContent() {
     e.preventDefault();
     setError(null);
     const code = promoCode.trim().toUpperCase();
-    if (code.length < 3) {
-      setError('Mã khuyến mãi phải có tối thiểu 3 ký tự.');
+    if (!/^[A-Z0-9_-]{3,32}$/.test(code)) {
+      setError('Mã khuyến mãi phải dài 3–32 ký tự, chỉ gồm chữ A–Z, số, _ và -.');
       return;
     }
     setPromoBusy(true);
@@ -544,6 +547,9 @@ function AdminPortalContent() {
   const activeStaffCount = staffList.filter((s) => s.active).length;
   const lockedStaffCount = staffList.length - activeStaffCount;
   const lowStockCount = ingredients.filter((i) => i.lowStock).length;
+  // These lists are updated immediately after successful edits; the initial overview snapshot is stale.
+  const activeProductCount = products.filter((product) => product.active).length;
+  const activePromotionCount = promotions.filter((promotion) => promotion.active).length;
 
   const filteredStaff = staffList.filter((staff) => {
     if (statusFilter === 'ACTIVE' && !staff.active) return false;
@@ -919,7 +925,7 @@ function AdminPortalContent() {
               <p className="mt-2 text-2xl font-extrabold text-[#2d6a4f]">
                 {formatVnd(overview.stats.totalRevenue)}
               </p>
-              <p className="mt-1 text-xs text-[#2d6a4f]">Đơn PAID / PREPARING / READY / COMPLETED</p>
+              <p className="mt-1 text-xs text-[#2d6a4f]">Thanh toán chính thành công, chưa hoàn tiền</p>
             </div>
             <div className="rounded-2xl border border-[#e2d2b8] bg-white p-5 shadow-xs">
               <p className="text-xs font-bold uppercase tracking-wider text-[#7a6254]">
@@ -940,10 +946,10 @@ function AdminPortalContent() {
                 Thực Đơn Đang Mở Bán
               </p>
               <p className="mt-2 text-2xl font-extrabold text-[#4a2e20]">
-                {overview.stats.activeProducts} / {overview.stats.totalProducts} món
+                {activeProductCount} / {products.length} món
               </p>
               <p className="mt-1 text-xs text-[#7a6254]">
-                Khuyến mãi đang bật: {overview.stats.activePromotions}/{overview.stats.totalPromotions}
+                Khuyến mãi đang bật: {activePromotionCount}/{promotions.length}
               </p>
             </div>
             <div className="rounded-2xl border border-[#e2d2b8] bg-[#fff8eb] p-5 shadow-xs">
@@ -951,10 +957,10 @@ function AdminPortalContent() {
                 Tình Trạng Kho Nguyên Liệu
               </p>
               <p className="mt-2 text-2xl font-extrabold text-[#9c6512]">
-                {overview.stats.lowStockIngredients} cảnh báo
+                {lowStockCount} cảnh báo
               </p>
               <p className="mt-1 text-xs text-[#7a6254]">
-                Trên tổng số {overview.stats.totalIngredients} nguyên liệu
+                Trên tổng số {ingredients.length} nguyên liệu
               </p>
             </div>
           </section>
@@ -1072,6 +1078,7 @@ function AdminPortalContent() {
                           type="number"
                           min={0}
                           step={1000}
+                          max={MAX_ADMIN_QUANTITY - Math.max(0, ...product.sizes.map((size) => size.price - product.price))}
                           value={draftPrice}
                           onChange={(e) =>
                             setPriceDrafts((prev) => ({ ...prev, [product.id]: e.target.value }))
@@ -1225,6 +1232,7 @@ function AdminPortalContent() {
                       <input
                         type="number"
                         min={0}
+                        max={MAX_ADMIN_QUANTITY}
                         value={draftStock}
                         onChange={(e) =>
                           setStockDrafts((prev) => ({ ...prev, [ing.id]: e.target.value }))
@@ -1234,7 +1242,7 @@ function AdminPortalContent() {
                       <button
                         type="button"
                         disabled={isBusy}
-                        onClick={() => handleUpdateIngredientStock(ing, Number(draftStock))}
+                        onClick={() => handleUpdateIngredientStock(ing, draftStock)}
                         className="rounded-full border border-[#6d4c3d] bg-white px-3 py-1.5 text-xs font-bold text-[#4a2e20] transition hover:bg-[#6d4c3d] hover:text-white disabled:opacity-50"
                       >
                         Cập nhật

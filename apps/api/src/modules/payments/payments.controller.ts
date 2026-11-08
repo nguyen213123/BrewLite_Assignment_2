@@ -616,6 +616,7 @@ export class PaymentsController {
 
     if (isRefundConfirmedByGateway) {
       const reconciled = await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${target.order.id}::uuid FOR UPDATE`;
         const currentOrder = await tx.order.findUnique({
           where: { id: target.order.id },
           include: { items: { include: { toppings: true } } },
@@ -852,6 +853,7 @@ export class PaymentsController {
     // Khóa nguyên tử (atomic lock) trên IdempotencyRecord (httpStatus 200 -> 201) và kiểm tra trạng thái đơn PAID trong cùng transaction
     // trước khi gọi cổng VNPay để chống gửi hoàn tiền trùng hoặc xung đột với thao tác chuyển trạng thái pha chế của STAFF
     await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${target.order.id}::uuid FOR UPDATE`;
       const freshOrder = await tx.order.findUnique({
         where: { id: target.order.id },
       });
@@ -970,6 +972,7 @@ export class PaymentsController {
 
     try {
       reconciled = await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${target.order.id}::uuid FOR UPDATE`;
         const currentOrder = await tx.order.findUnique({
           where: { id: target.order.id },
           include: { items: { include: { toppings: true } } },

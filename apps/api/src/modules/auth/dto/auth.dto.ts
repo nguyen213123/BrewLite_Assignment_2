@@ -7,13 +7,18 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Matches,
+  Max,
+  ValidateIf,
   MaxLength,
   Min,
   MinLength,
   ValidateBy,
 } from 'class-validator';
-import { trimLower, trimUpper } from '../../../common/dto/shared.dto';
+import { ifDefined, trimLower, trimUpper } from '../../../common/dto/shared.dto';
 import type { AuthRequest, LoginRequest } from '../../../common/contracts/api.generated';
+
+export const MAX_ADMIN_INTEGER = 2_147_483_647;
 
 const maxPasswordBytes = () => ValidateBy({ name: 'maxPasswordBytes', validator: {
   validate: (value: unknown) => typeof value === 'string' && Buffer.byteLength(value, 'utf8') <= 72,
@@ -43,39 +48,40 @@ export class UpdateStaffStatusDto {
   active!: boolean;
 }
 export class AdminUpdateProductDto {
-  @IsInt() @Min(0)
+  @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
   expectedVersion!: number;
-  @IsOptional() @IsBoolean()
+  @ValidateIf(ifDefined) @IsBoolean()
   active?: boolean;
-  @IsOptional() @IsInt() @Min(0)
+  @ValidateIf(ifDefined) @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
   price?: number;
-  @IsOptional() @IsString() @MinLength(1) @MaxLength(120)
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @ValidateIf(ifDefined) @IsString() @MinLength(1) @MaxLength(120)
   name?: string;
 }
 export class AdminUpdateToppingDto {
-  @IsOptional() @IsBoolean()
+  @ValidateIf(ifDefined) @IsBoolean()
   active?: boolean;
-  @IsOptional() @IsInt() @Min(0)
+  @ValidateIf(ifDefined) @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
   price?: number;
 }
 export class AdminUpdateIngredientDto {
-  @IsInt() @Min(0)
+  @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
   expectedVersion!: number;
-  @IsInt() @Min(0)
+  @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
   stock!: number;
 }
 export class AdminCreatePromotionDto {
-  @Transform(trimUpper) @IsString() @MinLength(3) @MaxLength(32)
+  @Transform(trimUpper) @IsString() @MinLength(3) @MaxLength(32) @Matches(/^[A-Z0-9_-]+$/)
   code!: string;
   @IsIn(['PERCENT', 'FIXED'])
   type!: 'PERCENT' | 'FIXED';
-  @IsInt() @Min(1)
+  @IsInt() @Min(1) @Max(MAX_ADMIN_INTEGER)
   value!: number;
-  @IsInt() @Min(0)
+  @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
   minSubtotal!: number;
-  @IsOptional() @IsInt() @Min(1)
+  @IsOptional() @IsInt() @Min(1) @Max(MAX_ADMIN_INTEGER)
   maxDiscount?: number;
-  @IsOptional() @IsInt() @Min(1)
+  @IsOptional() @IsInt() @Min(1) @Max(MAX_ADMIN_INTEGER)
   maxUses?: number;
   @IsDateString()
   startsAt!: string;

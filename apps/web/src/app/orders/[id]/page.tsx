@@ -173,7 +173,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         body: JSON.stringify({ expectedVersion: order.version }),
       });
       setOrder(updated);
-      setCancelSuccess(true);
+      setCancelSuccess(updated.status === 'CANCELLED');
+      if (updated.status !== 'CANCELLED') {
+        setActionError('Đơn chưa được hủy và chưa hoàn kho. Vui lòng liên hệ cửa hàng để đối soát hoàn tiền.');
+      }
       setConfirmCancel(false);
       if (user?.role === 'CUSTOMER') {
         try {
