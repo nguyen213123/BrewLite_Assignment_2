@@ -165,6 +165,8 @@ npm run dev
 
 ## 🌱 Nạp dữ liệu mẫu (Seed Data)
 
+Tài khoản quản trị seed sử dụng email `admin@gmail.com`.
+
 Trước khi seed, cấu hình `SEED_ADMIN_PASSWORD` và `SEED_STAFF_PASSWORD` riêng trong môi trường chạy seed (8 ký tự đến 72 byte UTF-8). Không có mật khẩu mặc định. Seed từ chối email đã thuộc tài khoản khác; chạy lại không đổi quyền, mật khẩu hoặc trạng thái khóa của tài khoản seed hiện có. Nếu đổi quyền tài khoản, JWT mang quyền cũ sẽ bị từ chối và người dùng phải đăng nhập lại.
 
 

@@ -4,7 +4,7 @@ import { AUTH_POLICY } from '../modules/auth/auth-policy';
 
 export function seedAccounts(env: NodeJS.ProcessEnv) {
   return [
-    { id: '99999999-9999-4999-8999-999999999901', email: 'admin@brewlite.local', role: 'ADMIN' as const, key: 'SEED_ADMIN_PASSWORD' },
+    { id: '99999999-9999-4999-8999-999999999901', email: 'admin@gmail.com', role: 'ADMIN' as const, key: 'SEED_ADMIN_PASSWORD' },
     { id: '99999999-9999-4999-8999-999999999902', email: 'staff@brewlite.local', role: 'STAFF' as const, key: 'SEED_STAFF_PASSWORD' },
   ].map(({ key, ...account }) => {
     const password = env[key];
