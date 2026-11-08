@@ -13,7 +13,18 @@ const TEST_SECRET = 'this-is-a-valid-test-jwt-secret-with-at-least-32-characters
 
 describe('Auth module (Issue #6)', () => {
   let app: INestApplication;
-  const mockUsers: Map<string, { id: string; email: string; passwordHash: string; role: 'CUSTOMER' | 'STAFF'; loyaltyPoints: number }> = new Map();
+  const mockUsers: Map<
+    string,
+    {
+      id: string;
+      email: string;
+      passwordHash: string;
+      role: 'CUSTOMER' | 'STAFF' | 'ADMIN';
+      active?: boolean;
+      createdAt?: Date;
+      loyaltyPoints: number;
+    }
+  > = new Map();
 
   const mockPrisma = {
     user: {
@@ -26,11 +37,22 @@ describe('Auth module (Issue #6)', () => {
         }
         return null;
       }),
-      create: jest.fn().mockImplementation(async ({ data }: { data: { email: string; passwordHash: string; role: 'CUSTOMER' | 'STAFF'; loyaltyPoints: number } }) => {
-        const id = '11111111-2222-3333-4444-555555555555';
-        const user = { id, ...data };
+      findMany: jest.fn().mockImplementation(async ({ where }: { where?: { role?: 'CUSTOMER' | 'STAFF' | 'ADMIN' } }) => {
+        const list = [...mockUsers.values()];
+        return where?.role ? list.filter(u => u.role === where.role) : list;
+      }),
+      create: jest.fn().mockImplementation(async ({ data }: { data: { email: string; passwordHash: string; role: 'CUSTOMER' | 'STAFF' | 'ADMIN'; active?: boolean; loyaltyPoints: number } }) => {
+        const id = data.role === 'STAFF' ? '22222222-3333-4444-8555-666666666666' : '11111111-2222-3333-4444-555555555555';
+        const user = { id, active: true, createdAt: new Date('2026-11-08T00:00:00.000Z'), ...data };
         mockUsers.set(id, user);
         return user;
+      }),
+      update: jest.fn().mockImplementation(async ({ where, data }: { where: { id: string }; data: { active?: boolean } }) => {
+        const existing = mockUsers.get(where.id);
+        if (!existing) throw new Error('User not found');
+        const updated = { ...existing, ...data };
+        mockUsers.set(where.id, updated);
+        return updated;
       }),
     },
     $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
@@ -259,6 +281,143 @@ describe('Auth module (Issue #6)', () => {
         .expect(401);
 
       expect(response.body.code).toBe('UNAUTHORIZED');
+    });
+  });
+
+  describe('Staff account management & RBAC (feature/auth-account)', () => {
+    const adminId = '99999999-9999-4999-8999-999999999901';
+    const customerId = '99999999-9999-4999-8999-999999999902';
+    const staffId = '22222222-3333-4444-8555-666666666666';
+
+    function signToken(id: string, role: 'CUSTOMER' | 'STAFF' | 'ADMIN') {
+      return jwt.sign({ sub: id, role }, TEST_SECRET, {
+        issuer: AUTH_POLICY.issuer,
+        audience: AUTH_POLICY.audience,
+        expiresIn: 3600,
+      });
+    }
+
+    beforeEach(async () => {
+      const passwordHash = await bcrypt.hash('ValidPass123!', AUTH_POLICY.bcryptCost);
+      mockUsers.set(adminId, {
+        id: adminId,
+        email: 'admin@brewlite.local',
+        passwordHash,
+        role: 'ADMIN',
+        active: true,
+        loyaltyPoints: 0,
+      });
+      mockUsers.set(customerId, {
+        id: customerId,
+        email: 'customer@brewlite.local',
+        passwordHash,
+        role: 'CUSTOMER',
+        active: true,
+        loyaltyPoints: 0,
+      });
+    });
+
+    it('forbids CUSTOMER and STAFF from creating or listing staff accounts (403 FORBIDDEN)', async () => {
+      const customerToken = signToken(customerId, 'CUSTOMER');
+      await request(app.getHttpServer())
+        .post('/api/auth/staff')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({ email: 'newstaff@brewlite.local', password: 'StaffPassword123!' })
+        .expect(403);
+
+      await request(app.getHttpServer())
+        .get('/api/auth/staff')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .expect(403);
+
+      mockUsers.set(staffId, {
+        id: staffId,
+        email: 'staff@brewlite.local',
+        passwordHash: 'hash',
+        role: 'STAFF',
+        active: true,
+        loyaltyPoints: 0,
+      });
+      const staffToken = signToken(staffId, 'STAFF');
+      await request(app.getHttpServer())
+        .post('/api/auth/staff')
+        .set('Authorization', `Bearer ${staffToken}`)
+        .send({ email: 'another@brewlite.local', password: 'StaffPassword123!' })
+        .expect(403);
+    });
+
+    it('allows ADMIN to create, list, lock and unlock STAFF account with immediate effect', async () => {
+      const adminToken = signToken(adminId, 'ADMIN');
+
+      // 1. Admin creates STAFF account
+      const createdRes = await request(app.getHttpServer())
+        .post('/api/auth/staff')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ email: '  Barista01@BrewLite.local ', password: 'StaffPassword123!' })
+        .expect(201);
+
+      expect(createdRes.body).toEqual(
+        expect.objectContaining({
+          id: staffId,
+          email: 'barista01@brewlite.local',
+          role: 'STAFF',
+          active: true,
+        }),
+      );
+
+      // 2. Admin lists STAFF accounts
+      const listRes = await request(app.getHttpServer())
+        .get('/api/auth/staff')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+      expect(listRes.body.data).toHaveLength(1);
+      expect(listRes.body.data[0].email).toBe('barista01@brewlite.local');
+
+      // 3. Staff logs in and gets a valid JWT token
+      const loginRes = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email: 'barista01@brewlite.local', password: 'StaffPassword123!' })
+        .expect(200);
+      const staffToken = loginRes.body.accessToken as string;
+      expect(loginRes.body.user.role).toBe('STAFF');
+
+      await request(app.getHttpServer())
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${staffToken}`)
+        .expect(200);
+
+      // 4. Admin locks the STAFF account -> takes effect IMMEDIATELY even with existing valid JWT
+      const lockRes = await request(app.getHttpServer())
+        .patch(`/api/auth/staff/${staffId}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ active: false })
+        .expect(200);
+      expect(lockRes.body.active).toBe(false);
+
+      const meLockedRes = await request(app.getHttpServer())
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${staffToken}`)
+        .expect(403);
+      expect(meLockedRes.body.code).toBe('ACCOUNT_LOCKED');
+
+      const loginLockedRes = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email: 'barista01@brewlite.local', password: 'StaffPassword123!' })
+        .expect(403);
+      expect(loginLockedRes.body.code).toBe('ACCOUNT_LOCKED');
+
+      // 5. Admin unlocks the STAFF account -> access restored immediately
+      const unlockRes = await request(app.getHttpServer())
+        .patch(`/api/auth/staff/${staffId}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ active: true })
+        .expect(200);
+      expect(unlockRes.body.active).toBe(true);
+
+      await request(app.getHttpServer())
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${staffToken}`)
+        .expect(200);
     });
   });
 });

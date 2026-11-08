@@ -28,10 +28,21 @@ export abstract class ProductsPort {
 export abstract class CatalogPricingPort {
   abstract resolve(tx: Tx, items: Api.CartItem[]): Promise<Api.QuoteItem[]>;
 }
+export type StaffAccount = {
+  id: string;
+  email: string;
+  role: 'STAFF';
+  active: boolean;
+  createdAt: string;
+};
+
 export abstract class AuthPort {
   abstract register(input: Api.AuthRequest): Promise<Api.AuthResponse>;
   abstract login(input: Api.LoginRequest): Promise<Api.AuthResponse>;
   abstract me(user: CurrentUserData): Promise<Api.User>;
+  createStaff?(input: Api.AuthRequest): Promise<StaffAccount>;
+  listStaff?(): Promise<{ data: StaffAccount[] }>;
+  setStaffStatus?(staffId: string, active: boolean): Promise<StaffAccount>;
 }
 export abstract class OrdersPort {
   abstract quote(userId: string, input: Api.OrderRequest): Promise<Api.Quote>;
@@ -42,6 +53,8 @@ export abstract class OrdersPort {
 export abstract class OrderReadPort {
   abstract listMine(userId: string, query: PageQuery): Promise<Api.OrderPage>;
   abstract findMine(userId: string, orderId: string): Promise<Api.Order>;
+  listAllForStaff?(query: PageQuery & { status?: Api.OrderStatus }): Promise<Api.OrderPage>;
+  findAnyForStaff?(orderId: string): Promise<Api.Order>;
 }
 export abstract class OrderTransactionsPort {
   abstract loadOwned(tx: Tx, userId: string, orderId: string): Promise<StoredOrder>;

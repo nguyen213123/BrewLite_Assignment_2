@@ -93,14 +93,27 @@ integration('Real checkout: auth/catalog/create/inventory/promotion/payment/loya
   it('seed runs twice without duplicates, and seeded catalog has sizes and toppings', async () => {
     const build = spawnSync(process.execPath, [require.resolve('typescript/bin/tsc'), '-p', 'tsconfig.seed.json'], { cwd: backend, encoding: 'utf8' });
     expect(build.status).toBe(0);
+    // Seed requires explicit credentials; keep them scoped to the disposable test database.
+    const seedEnv = { ...process.env, DATABASE_URL: db!.url,
+      SEED_ADMIN_PASSWORD: randomUUID(), SEED_STAFF_PASSWORD: randomUUID() };
     const runSeed = () => {
       const result = spawnSync(process.execPath, ['dist/seed/seed.js'], { cwd: backend,
-        env: { ...process.env, DATABASE_URL: db!.url }, encoding: 'utf8' });
-      expect(result.status).toBe(0);
+        env: seedEnv, encoding: 'utf8' });
+      if (result.status !== 0) {
+        throw new Error(`Seed integration failed (exit ${result.status}):\n${result.stderr || result.stdout || result.error?.message}`);
+      }
     };
     runSeed();
     const counts = async () => Promise.all([prisma.product.count(), prisma.productSize.count(), prisma.topping.count(), prisma.productTopping.count(), prisma.promotion.count()]);
-    const first = await counts(); runSeed(); expect(await counts()).toEqual(first);
+    const first = await counts();
+    const admin = await prisma.user.findUniqueOrThrow({ where: { email: 'admin@gmail.com' } });
+    await prisma.user.update({ where: { id: admin.id }, data: { active: false } });
+    runSeed();
+    expect(await counts()).toEqual(first);
+    const adminAfter = await prisma.user.findUniqueOrThrow({ where: { id: admin.id } });
+    expect(adminAfter.passwordHash).toBe(admin.passwordHash);
+    expect(adminAfter.active).toBe(false);
+    expect(adminAfter.role).toBe('ADMIN');
     expect(first).toEqual([17, 51, 5, 85, 3]);
     const response = await request(app.getHttpServer()).get('/api/products/11111111-1111-4111-8111-111111111111').expect(200);
     expect(response.body.sizes).toHaveLength(3); expect(response.body.toppings).toHaveLength(5);

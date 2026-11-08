@@ -99,7 +99,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
     async function loadDetail() {
       try {
-        const data = await apiGet<Order>(`/orders/${id}`);
+        const endpoint =
+          user?.role === 'STAFF'
+            ? `/orders/staff/${id}`
+            : `/orders/${id}`;
+        const data = await apiGet<Order>(endpoint);
         if (!ignore) {
           setOrder(data);
           setError(null);
@@ -169,7 +173,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         body: JSON.stringify({ expectedVersion: order.version }),
       });
       setOrder(updated);
-      setCancelSuccess(true);
+      setCancelSuccess(updated.status === 'CANCELLED');
+      if (updated.status !== 'CANCELLED') {
+        setActionError('Đơn chưa được hủy và chưa hoàn kho. Vui lòng liên hệ cửa hàng để đối soát hoàn tiền.');
+      }
       setConfirmCancel(false);
       if (user?.role === 'CUSTOMER') {
         try {
@@ -250,7 +257,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     year: 'numeric',
   });
 
-  const staffTransition = user?.role === 'STAFF' ? NEXT_STAFF_STATUS[order.status] : undefined;
+  const staffTransition =
+    user?.role === 'STAFF' || user?.role === 'ADMIN'
+      ? NEXT_STAFF_STATUS[order.status]
+      : undefined;
 
   return (
     <div>

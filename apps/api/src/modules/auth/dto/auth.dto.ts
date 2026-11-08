@@ -1,7 +1,25 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, MaxLength, MinLength, ValidateBy } from 'class-validator';
-import { trimLower } from '../../../common/dto/shared.dto';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEmail,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  ValidateIf,
+  MaxLength,
+  Min,
+  MinLength,
+  ValidateBy,
+} from 'class-validator';
+import { ifDefined, trimLower, trimUpper } from '../../../common/dto/shared.dto';
 import type { AuthRequest, LoginRequest } from '../../../common/contracts/api.generated';
+
+export const MAX_ADMIN_INTEGER = 2_147_483_647;
+export const MAX_ADMIN_MONEY = 2_000_000_000;
 
 const maxPasswordBytes = () => ValidateBy({ name: 'maxPasswordBytes', validator: {
   validate: (value: unknown) => typeof value === 'string' && Buffer.byteLength(value, 'utf8') <= 72,
@@ -19,4 +37,59 @@ export class LoginDto implements LoginRequest {
   email!: string;
   @IsString() @MinLength(1) @MaxLength(72) @maxPasswordBytes()
   password!: string;
+}
+export class CreateStaffDto implements AuthRequest {
+  @Transform(trimLower) @IsEmail() @MaxLength(254)
+  email!: string;
+  @IsString() @MinLength(8) @MaxLength(72) @maxPasswordBytes()
+  password!: string;
+}
+export class UpdateStaffStatusDto {
+  @IsBoolean()
+  active!: boolean;
+}
+export class AdminUpdateProductDto {
+  @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
+  expectedVersion!: number;
+  @ValidateIf(ifDefined) @IsBoolean()
+  active?: boolean;
+  @ValidateIf(ifDefined) @IsInt() @Min(0) @Max(MAX_ADMIN_MONEY)
+  price?: number;
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @ValidateIf(ifDefined) @IsString() @MinLength(1) @MaxLength(120)
+  name?: string;
+}
+export class AdminUpdateToppingDto {
+  @ValidateIf(ifDefined) @IsBoolean()
+  active?: boolean;
+  @ValidateIf(ifDefined) @IsInt() @Min(0) @Max(MAX_ADMIN_MONEY)
+  price?: number;
+}
+export class AdminUpdateIngredientDto {
+  @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
+  expectedVersion!: number;
+  @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
+  stock!: number;
+}
+export class AdminCreatePromotionDto {
+  @Transform(trimUpper) @IsString() @MinLength(3) @MaxLength(32) @Matches(/^[A-Z0-9_-]+$/)
+  code!: string;
+  @IsIn(['PERCENT', 'FIXED'])
+  type!: 'PERCENT' | 'FIXED';
+  @IsInt() @Min(1) @Max(MAX_ADMIN_MONEY)
+  value!: number;
+  @IsInt() @Min(0) @Max(MAX_ADMIN_MONEY)
+  minSubtotal!: number;
+  @IsOptional() @IsInt() @Min(0) @Max(MAX_ADMIN_MONEY)
+  maxDiscount?: number;
+  @IsOptional() @IsInt() @Min(1) @Max(MAX_ADMIN_INTEGER)
+  maxUses?: number;
+  @IsDateString()
+  startsAt!: string;
+  @IsDateString()
+  endsAt!: string;
+}
+export class AdminUpdatePromotionDto {
+  @IsBoolean()
+  active!: boolean;
 }

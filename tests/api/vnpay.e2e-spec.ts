@@ -416,6 +416,7 @@ describe('VnPayService (#10 VNPay Sandbox Integration)', () => {
     });
 
     const prismaBase = {
+      $queryRaw: jest.fn(async () => []),
       order: {
         findFirst: jest.fn(async () => makeOrderRow()),
         findUnique: jest.fn(async () => makeOrderRow()),
@@ -667,6 +668,7 @@ describe('VnPayService (#10 VNPay Sandbox Integration)', () => {
     });
 
     const prismaBase = {
+      $queryRaw: jest.fn(async () => []),
       order: {
         findFirst: jest.fn(async () => makeOrderRow()),
         findUnique: jest.fn(async () => makeOrderRow()),

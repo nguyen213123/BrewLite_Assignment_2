@@ -3,6 +3,7 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, IngredientUnit } from '../generated/prisma/client';
+import { seedUsers } from './seed-users';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({
@@ -210,6 +211,8 @@ const promotions = [
 
 
 async function main() {
+  // Validate credentials and account ownership before resetting any demo data.
+  const accountCount = await seedUsers(prisma, process.env);
   for (const t of toppings) {
     await prisma.topping.upsert({ where: { id: t.id }, create: { ...t, active: true }, update: { name: t.name, price: t.price, active: true } });
   }
@@ -290,7 +293,7 @@ async function main() {
     await prisma.promotion.upsert({ where: { code: promo.code }, create: data, update: data });
   }
 
-  console.log(`Seed xong: ${products.length} sản phẩm, ${toppings.length} topping, ${ingredients.length} nguyên liệu, ${promotions.length} mã khuyến mãi.`);
+  console.log(`Seed xong: ${products.length} sản phẩm, ${toppings.length} topping, ${ingredients.length} nguyên liệu, ${promotions.length} mã khuyến mãi, ${accountCount} tài khoản quản trị/nhân viên.`);
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());

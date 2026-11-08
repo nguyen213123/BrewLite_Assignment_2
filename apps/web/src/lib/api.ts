@@ -46,6 +46,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
 
     if (errorData && errorData.code) {
+      if (errorData.code === 'ACCOUNT_LOCKED') {
+        clearAuth();
+      }
       throw new ApiRequestError(
         errorData.statusCode ?? response.status,
         errorData.code,
@@ -72,6 +75,13 @@ export function apiPost<T>(path: string, body?: unknown, headers?: Record<string
   return apiFetch<T>(path, {
     method: 'POST',
     headers: headers ? new Headers(headers) : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+}
+
+export function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  return apiFetch<T>(path, {
+    method: 'PATCH',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 }

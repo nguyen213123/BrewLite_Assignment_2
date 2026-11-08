@@ -262,6 +262,7 @@ export class OrdersService implements OrdersPort {
           }
 
           await this.unitOfWork.run(async (tx) => {
+            await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId}::uuid FOR UPDATE`;
             const current = await this.transitions.loadOwned(tx, userId, orderId);
             if (current.version !== expectedVersion) {
               throw new ApiError(409, 'ORDER_VERSION_CONFLICT', 'Đơn hàng đã thay đổi, vui lòng tải lại');
@@ -274,7 +275,7 @@ export class OrdersService implements OrdersPort {
               );
             }
 
-            const lock = await this.prisma!.idempotencyRecord.updateMany({
+            const lock = await tx.idempotencyRecord.updateMany({
               where: {
                 id: vnpayPayment.idempotencyRecordId,
                 status: 'COMPLETED',
@@ -293,7 +294,7 @@ export class OrdersService implements OrdersPort {
               );
             }
 
-            await this.prisma!.idempotencyRecord.update({
+            await tx.idempotencyRecord.update({
               where: { id: vnpayPayment.idempotencyRecordId },
               data: {
                 status: 'COMPLETED',
@@ -377,6 +378,7 @@ export class OrdersService implements OrdersPort {
 
           try {
             return await this.unitOfWork.run(async (tx) => {
+              await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId}::uuid FOR UPDATE`;
               const order = await this.transitions.loadOwned(tx, userId, orderId);
               if (order.status === 'PAID') {
                 const cancelled = await this.transitions.transition(tx, {

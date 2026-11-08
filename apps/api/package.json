@@ -15,7 +15,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "build:seed": "tsc -p tsconfig.seed.json",
-    "seed": "node dist/seed/seed.js"
+    "seed": "node dist/seed/seed.js",
+    "seed:reset-admin": "node dist/seed/reset-admin.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",
