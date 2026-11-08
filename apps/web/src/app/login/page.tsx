@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiPost, ApiRequestError } from '@/lib/api';
-import { setAuth } from '@/lib/auth';
+import { getPostLoginRedirect, setAuth } from '@/lib/auth';
 import type { AuthResponse, LoginRequest } from '@/lib/contracts/api.generated';
 
 export default function LoginPage() {
@@ -33,11 +33,13 @@ export default function LoginPage() {
       const payload: LoginRequest = { email: trimmedEmail, password };
       const response = await apiPost<AuthResponse>('/auth/login', payload);
       setAuth(response);
-      router.push('/');
+      router.push(getPostLoginRedirect(response.user.role));
     } catch (err) {
       if (err instanceof ApiRequestError) {
         if (err.code === 'INVALID_CREDENTIALS') {
           setError('Email hoặc mật khẩu không đúng. Vui lòng thử lại.');
+        } else if (err.code === 'ACCOUNT_LOCKED') {
+          setError('Tài khoản của bạn đã bị khóa bởi Quản trị viên.');
         } else {
           setError(err.message || 'Đăng nhập thất bại.');
         }

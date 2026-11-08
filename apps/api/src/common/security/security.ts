@@ -31,7 +31,21 @@ export class StaffGuard implements CanActivate {
   canActivate(context: ExecutionContext) {
     const user = context.switchToHttp().getRequest<AuthenticatedRequest>().user;
     if (!user) throw new ApiError(401, 'UNAUTHORIZED', 'Cần đăng nhập');
-    if (user.role !== 'STAFF') throw new ApiError(403, 'FORBIDDEN', 'Chức năng yêu cầu STAFF');
+    if (user.role !== 'STAFF') {
+      throw new ApiError(403, 'FORBIDDEN', 'Chức năng yêu cầu STAFF');
+    }
+    return true;
+  }
+}
+
+@Injectable()
+export class AdminGuard implements CanActivate {
+  canActivate(context: ExecutionContext) {
+    const user = context.switchToHttp().getRequest<AuthenticatedRequest>().user;
+    if (!user) throw new ApiError(401, 'UNAUTHORIZED', 'Cần đăng nhập');
+    if (user.role !== 'ADMIN') {
+      throw new ApiError(403, 'FORBIDDEN', 'Chức năng yêu cầu ADMIN');
+    }
     return true;
   }
 }

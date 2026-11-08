@@ -50,6 +50,97 @@ export class OrderReaderService implements OrderReadPort {
     };
   }
 
+  async listAllForStaff(query: PageQuery & { status?: Api.OrderStatus }): Promise<Api.OrderPage & { statusCounts: Partial<Record<Api.OrderStatus, number>> }> {
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.max(1, Math.min(50, query.limit ?? 12));
+    const skip = (page - 1) * limit;
+
+    const where = query.status ? { status: query.status } : {};
+    const [total, orders, grouped] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.order.groupBy({ by: ['status'], _count: { _all: true } }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      statusCounts: Object.fromEntries(grouped.map((row) => [row.status, row._count._all])),
+      data: orders.map(order => ({
+        id: order.id,
+        code: order.code,
+        status: order.status,
+        reservationStatus: order.reservationStatus,
+        version: order.version,
+        subtotal: order.subtotal,
+        discount: order.discount,
+        total: order.total,
+        currency: 'VND',
+        promotionCode: order.promotionCode,
+        createdAt: order.createdAt.toISOString(),
+        updatedAt: order.updatedAt.toISOString(),
+      })),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
+  }
+
+  async findAnyForStaff(orderId: string): Promise<Api.Order> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            toppings: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new ApiError(404, 'ORDER_NOT_FOUND', 'Không tìm thấy đơn hàng');
+    }
+
+    return {
+      id: order.id,
+      code: order.code,
+      status: order.status,
+      reservationStatus: order.reservationStatus,
+      version: order.version,
+      subtotal: order.subtotal,
+      discount: order.discount,
+      total: order.total,
+      currency: 'VND',
+      promotionCode: order.promotionCode,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
+      items: order.items.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        size: item.size,
+        sizePrice: item.sizePrice,
+        qty: item.qty,
+        unitPrice: item.unitPrice,
+        lineTotal: item.lineTotal,
+        toppings: item.toppings.map(t => ({
+          id: t.toppingId,
+          name: t.name,
+          price: t.price,
+        })),
+      })),
+    };
+  }
+
   async findMine(userId: string, orderId: string): Promise<Api.Order> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },

@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsIn, IsInt, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested, ValidationError } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsIn, IsInt, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested, ValidationError } from 'class-validator';
 import { Type } from 'class-transformer';
 import type { CartItem, Size } from '../contracts/api.generated';
 
@@ -16,6 +16,11 @@ export class PaginationDto {
 
   @Transform(decimalInteger) @IsInt() @Min(1) @Max(50)
   limit = 12;
+}
+
+export class StaffOrderQueryDto extends PaginationDto {
+  @IsOptional() @IsIn(['PENDING', 'PAID', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED', 'PAYMENT_FAILED'])
+  status?: import('../contracts/api.generated').OrderStatus;
 }
 
 export class IdParamDto {

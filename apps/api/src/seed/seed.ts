@@ -1,8 +1,10 @@
 // Owner: TV1 — dữ liệu mẫu catalog + khuyến mãi. Generate Prisma, rồi build:seed và seed theo README.
 // Chạy lại seed = RESET trạng thái demo (stock, usedCount) nhưng không xóa đơn hàng.
 import 'dotenv/config';
+import * as bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, IngredientUnit } from '../generated/prisma/client';
+import { AUTH_POLICY } from '../modules/auth/auth-policy';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({
@@ -290,7 +292,42 @@ async function main() {
     await prisma.promotion.upsert({ where: { code: promo.code }, create: data, update: data });
   }
 
-  console.log(`Seed xong: ${products.length} sản phẩm, ${toppings.length} topping, ${ingredients.length} nguyên liệu, ${promotions.length} mã khuyến mãi.`);
+  const defaultUsers = [
+    {
+      id: '99999999-9999-4999-8999-999999999901',
+      email: 'admin@brewlite.local',
+      password: process.env.SEED_ADMIN_PASSWORD ?? 'Admin123!',
+      role: 'ADMIN' as const,
+    },
+    {
+      id: '99999999-9999-4999-8999-999999999902',
+      email: 'staff@brewlite.local',
+      password: process.env.SEED_STAFF_PASSWORD ?? 'Staff123!',
+      role: 'STAFF' as const,
+    },
+  ];
+
+  for (const u of defaultUsers) {
+    const passwordHash = await bcrypt.hash(u.password, AUTH_POLICY.bcryptCost);
+    await prisma.user.upsert({
+      where: { email: u.email },
+      create: {
+        id: u.id,
+        email: u.email,
+        passwordHash,
+        role: u.role,
+        active: true,
+        loyaltyPoints: 0,
+      },
+      update: {
+        passwordHash,
+        role: u.role,
+        active: true,
+      },
+    });
+  }
+
+  console.log(`Seed xong: ${products.length} sản phẩm, ${toppings.length} topping, ${ingredients.length} nguyên liệu, ${promotions.length} mã khuyến mãi, ${defaultUsers.length} tài khoản quản trị/nhân viên.`);
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());

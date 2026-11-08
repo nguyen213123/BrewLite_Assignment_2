@@ -11,6 +11,7 @@ datasource db {
 enum Role {
   CUSTOMER
   STAFF
+  ADMIN
 }
 enum Size {
   S
@@ -67,6 +68,7 @@ model User {
   email          String              @unique @db.VarChar(254)
   passwordHash   String              @db.VarChar(60)
   role           Role                @default(CUSTOMER)
+  active         Boolean             @default(true)
   loyaltyPoints  Int                 @default(0)
   createdAt      DateTime            @default(now())
   orders         Order[]

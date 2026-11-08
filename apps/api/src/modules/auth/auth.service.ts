@@ -5,6 +5,7 @@ import * as jwt from 'jsonwebtoken';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthPort } from '../../common/contracts/ports';
+import type { StaffAccount } from '../../common/contracts/ports';
 import type * as Api from '../../common/contracts/api.generated';
 import { IdentityPort } from '../../common/security/security';
 import type { CurrentUserData } from '../../common/security/security';
@@ -68,6 +69,10 @@ export class AuthService implements AuthPort, IdentityPort, OnModuleInit {
       throw new ApiError(401, 'INVALID_CREDENTIALS', 'Email hoặc mật khẩu không đúng');
     }
 
+    if ((user as { active?: boolean }).active === false) {
+      throw new ApiError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa');
+    }
+
     return this.buildAuthResponse(user);
   }
 
@@ -76,6 +81,9 @@ export class AuthService implements AuthPort, IdentityPort, OnModuleInit {
     if (!dbUser) {
       throw new ApiError(401, 'UNAUTHORIZED', 'Cần đăng nhập');
     }
+    if ((dbUser as { active?: boolean }).active === false) {
+      throw new ApiError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa');
+    }
 
     return {
       id: dbUser.id,
@@ -83,6 +91,60 @@ export class AuthService implements AuthPort, IdentityPort, OnModuleInit {
       role: dbUser.role,
       loyaltyPoints: dbUser.loyaltyPoints,
     };
+  }
+
+  async createStaff(input: Api.AuthRequest): Promise<StaffAccount> {
+    const email = input.email.trim().toLowerCase();
+
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      throw new ApiError(409, 'EMAIL_ALREADY_EXISTS', 'Email đã được sử dụng');
+    }
+
+    const passwordHash = await bcrypt.hash(input.password, AUTH_POLICY.bcryptCost);
+
+    try {
+      const user = await this.prisma.user.create({
+        data: {
+          email,
+          passwordHash,
+          role: 'STAFF',
+          active: true,
+          loyaltyPoints: 0,
+        },
+      });
+
+      return this.toStaffAccount(user);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ApiError(409, 'EMAIL_ALREADY_EXISTS', 'Email đã được sử dụng');
+      }
+      throw error;
+    }
+  }
+
+  async listStaff(): Promise<{ data: StaffAccount[] }> {
+    const staffUsers = await this.prisma.user.findMany({
+      where: { role: 'STAFF' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+    return {
+      data: staffUsers.map(u => this.toStaffAccount(u)),
+    };
+  }
+
+  async setStaffStatus(staffId: string, active: boolean): Promise<StaffAccount> {
+    const existing = await this.prisma.user.findUnique({ where: { id: staffId } });
+    if (!existing || existing.role !== 'STAFF') {
+      throw new ApiError(404, 'STAFF_NOT_FOUND', 'Không tìm thấy tài khoản nhân viên');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: staffId },
+      data: { active },
+    });
+
+    return this.toStaffAccount(updated);
   }
 
   async verifyAccessToken(token: string): Promise<CurrentUserData> {
@@ -104,11 +166,15 @@ export class AuthService implements AuthPort, IdentityPort, OnModuleInit {
 
       const dbUser = await this.prisma.user.findUnique({
         where: { id: decoded.sub },
-        select: { id: true, email: true, role: true },
+        select: { id: true, email: true, role: true, active: true },
       });
 
       if (!dbUser) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Người dùng không tồn tại');
+      }
+
+      if ((dbUser as { active?: boolean }).active === false) {
+        throw new ApiError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa');
       }
 
       return {
@@ -122,7 +188,27 @@ export class AuthService implements AuthPort, IdentityPort, OnModuleInit {
     }
   }
 
-  private buildAuthResponse(user: { id: string; email: string; role: 'CUSTOMER' | 'STAFF'; loyaltyPoints: number }): Api.AuthResponse {
+  private toStaffAccount(user: {
+    id: string;
+    email: string;
+    active?: boolean;
+    createdAt?: Date;
+  }): StaffAccount {
+    return {
+      id: user.id,
+      email: user.email,
+      role: 'STAFF',
+      active: user.active !== false,
+      createdAt: (user.createdAt ?? new Date()).toISOString(),
+    };
+  }
+
+  private buildAuthResponse(user: {
+    id: string;
+    email: string;
+    role: 'CUSTOMER' | 'STAFF' | 'ADMIN';
+    loyaltyPoints: number;
+  }): Api.AuthResponse {
     const secret = this.secret ?? process.env.JWT_SECRET;
     const token = jwt.sign(
       {

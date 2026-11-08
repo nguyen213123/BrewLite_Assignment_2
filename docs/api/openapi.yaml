@@ -1619,6 +1619,7 @@ components:
           enum:
             - CUSTOMER
             - STAFF
+            - ADMIN
         loyaltyPoints:
           type: integer
           minimum: 0

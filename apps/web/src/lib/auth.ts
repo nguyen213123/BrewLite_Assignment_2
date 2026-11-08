@@ -83,3 +83,9 @@ export function getAuthSnapshot(): User | null {
 export function getAuthServerSnapshot(): User | null {
   return null;
 }
+
+export function getPostLoginRedirect(role?: User['role']): string {
+  if (role === 'ADMIN') return '/admin';
+  if (role === 'STAFF') return '/staff';
+  return '/';
+}
