@@ -1,0 +1,103 @@
+// BrewLite — UML Deployment Diagram (Task 3.2)
+// Tạo lại ảnh:  dot -Tsvg deployment-diagram.dot -o deployment-diagram.svg
+//               dot -Tpng -Gdpi=150 deployment-diagram.dot -o deployment-diagram.png
+// "Render" (nền tảng) và "GHCR" (container registry) là GIẢ ĐỊNH: đổi cho đúng nền tảng nhóm dùng thật.
+digraph BrewLiteDeployment {
+  graph [rankdir=TB, fontname="Arial", fontsize=20, labelloc=t, pad=0.3, nodesep=0.55, ranksep=0.85,
+         compound=true, newrank=true, splines=true,
+         label="BrewLite — Deployment Diagram (Production, kèm ranh giới Local và CI/CD)\n "];
+  node  [fontname="Arial", fontsize=11, shape=box3d, style=filled, fillcolor="#EAF1FB", color="#2F4B7C", penwidth=1.4, margin="0.18,0.12"];
+  edge  [fontname="Arial", fontsize=10, color="#34495E", arrowsize=0.8];
+
+  // ===== Thiết bị người dùng =====
+  subgraph cluster_clients {
+    label="Thiết bị người dùng"; style="rounded,dashed"; color="#7F8C8D"; fontname="Arial"; fontsize=12;
+    customer [label="«device»\nCustomer device\n«browser» Web / PWA (mobile-first)", fillcolor="#FFF4D6", color="#B7791F"];
+    staff    [label="«device»\nStaff device\n«browser» Giao diện nhân viên", fillcolor="#FFF4D6", color="#B7791F"];
+  }
+
+  // ===== PRODUCTION =====
+  subgraph cluster_prod {
+    label="PRODUCTION  —  «deployment platform» Render (giả định)"; labelloc=b; labeljust=r; style="rounded,filled"; fillcolor="#F4FBF4"; color="#2E7D32"; penwidth=2.2; fontname="Arial"; fontsize=14;
+
+    edge_node [label="«execution environment»\nPlatform edge / CDN\nChấm dứt TLS · HTTPS :443", fillcolor="#E8F5E9", color="#2E7D32"];
+    platform  [label="«execution environment»\nDeployment platform\nnhận deploy hook · chạy container\npre-deploy: prisma migrate deploy\nhealth check: GET /api/health", fillcolor="#E8F5E9", color="#2E7D32"];
+
+    web [label="«container» web\nNext.js (SSR + PWA)\nlắng nghe :3000", fillcolor="#E3F2FD"];
+    api [label="«container» api\nNestJS (module theo domain)\nlắng nghe :3001", fillcolor="#E3F2FD"];
+    web_art [label="«artifact»\nbrewlite-web:<commit-sha>", shape=note, fillcolor="#FFFFFF"];
+    api_art [label="«artifact»\nbrewlite-api:<commit-sha>", shape=note, fillcolor="#FFFFFF"];
+
+    db  [label="«database»\nPostgreSQL 17\n:5432 — mạng nội bộ, KHÔNG public", shape=cylinder, fillcolor="#FDECEA", color="#C0392B"];
+    vol [label="«artifact»\nPersistent volume / disk", shape=note, fillcolor="#FFFFFF", color="#C0392B"];
+
+    envvars [label="«configuration»\nEnvironment variables / Secrets\nDATABASE_URL · JWT_SECRET\nVNPAY_* · STRIPE_* · FRONTEND_URL", shape=folder, fillcolor="#FFF8E1", color="#B7791F"];
+    logs    [label="«service»\nPlatform logs\n(stdout / stderr)", shape=note, fillcolor="#F5F5F5", color="#7F8C8D"];
+  }
+
+  // ===== Dịch vụ ngoài =====
+  subgraph cluster_ext {
+    label="Dịch vụ thanh toán bên ngoài (sandbox)"; style="rounded,dashed"; color="#7F8C8D"; fontname="Arial"; fontsize=12;
+    vnpay  [label="«external system»\nVNPay Sandbox", fillcolor="#F3E5F5", color="#6A1B9A"];
+    stripe [label="«external system»\nStripe Sandbox", fillcolor="#F3E5F5", color="#6A1B9A"];
+    note_pay [label="Khách được chuyển hướng (HTTPS)\nsang trang thanh toán, rồi quay về\nreturn URL của web (/payments/…-return)", shape=note, fillcolor="#FFFFFF", color="#6A1B9A", fontsize=10];
+  }
+
+  // ===== CI/CD =====
+  subgraph cluster_ci {
+    label="CI / CD  —  GitHub"; style="rounded,filled"; fillcolor="#F3F6FB"; color="#2F4B7C"; penwidth=2.2; fontname="Arial"; fontsize=14;
+    repo     [label="«repository»\nGitHub repository\nBrewLite_Assignment_2", shape=folder, fillcolor="#FFFFFF"];
+    runner   [label="«execution environment»\nGitHub Actions runner\nInstall → Lint → Test → Build\n→ docker build (api, web) → push\n→ deploy → smoke test", fillcolor="#E3F2FD"];
+    ghsec    [label="«configuration»\nGitHub Actions secrets\n(token registry, deploy hook)", shape=folder, fillcolor="#FFF8E1", color="#B7791F"];
+    registry [label="«container registry»\nGHCR (giả định)\nimage tag = commit SHA", fillcolor="#E8EAF6", color="#303F9F"];
+    ci_note  [label="Hiện có: ci.yml (Install → Lint → Test → Build)\nDự kiến Task 5.3: docker build, push registry,\ndeploy, smoke test", shape=note, style="filled,dashed", fillcolor="#FFFFFF", color="#7F8C8D", fontsize=10];
+  }
+
+  // ===== LOCAL =====
+  subgraph cluster_local {
+    label="LOCAL  —  máy lập trình viên"; style="rounded,filled"; fillcolor="#FBFBF2"; color="#7F8C8D"; penwidth=2.2; fontname="Arial"; fontsize=14;
+    dev [label="«device» Developer machine\ndocker-compose: web :3000 · api :3001 · db :5432\nvolume cục bộ · file .env không commit", fillcolor="#FFFFFF"];
+  }
+
+  // ===== Kết nối khi chạy (nét liền) =====
+  customer -> edge_node [label="HTTPS :443", dir=both];
+  staff    -> edge_node [label="HTTPS :443", dir=both];
+  edge_node -> web [label="HTTP :3000\n(nội bộ)"];
+  edge_node -> api [label="HTTP :3001\n(nội bộ)"];
+  api -> db  [label="TCP :5432 (nội bộ)\nPrisma", dir=both];
+  api -> vnpay  [label="HTTPS: hoàn tiền,\ntruy vấn giao dịch"];
+  api -> stripe [label="HTTPS: thanh toán"];
+  stripe -> api [label="HTTPS: webhook\n(qua platform edge)", style=dashed];
+
+  // ===== Triển khai / cấu hình / log (nét đứt) =====
+  web -> web_art [style=dashed, arrowhead=none, label="«deploy»"];
+  api -> api_art [style=dashed, arrowhead=none, label="«deploy»"];
+  db  -> vol     [style=dashed, arrowhead=none, label="«deploy»"];
+  envvars -> api [label="inject khi chạy", style=dashed];
+  api -> logs    [label="log", style=dashed];
+  platform -> api [label="chạy container\nhealth check", style=dashed];
+  platform -> web [label="chạy container", style=dashed];
+  platform -> db  [label="prisma migrate deploy\n(trước khi chạy bản mới)", style=dashed];
+
+  // ===== Pipeline =====
+  dev -> repo [label="git push / Pull Request"];
+  repo -> runner [label="push / tag / PR"];
+  ghsec -> runner [style=dashed, label="secret"];
+  runner -> ci_note [style=dashed, arrowhead=none];
+  runner -> registry [label="push image"];
+  registry -> platform [label="pull image"];
+  runner -> platform [label="deploy hook (HTTPS)\n+ smoke test", style=dashed];
+
+  { rank=same; customer; staff; }
+  { rank=same; vnpay; stripe; note_pay; }
+
+  // ===== Chú giải =====
+  legend [shape=plain, style="", label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="#7F8C8D">
+      <TR><TD ALIGN="LEFT"><B>Chú giải</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Nét liền: kết nối khi hệ thống chạy / luồng pipeline</TD></TR>
+      <TR><TD ALIGN="LEFT">Nét đứt: triển khai, cấu hình, log, webhook</TD></TR>
+      <TR><TD ALIGN="LEFT">Hộp 3D: node / container · Ghi chú: artifact · Trụ: cơ sở dữ liệu</TD></TR>
+    </TABLE>>];
+  { rank=same; dev; legend; }
+}
