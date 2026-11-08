@@ -1,3 +1,4 @@
+import { assertAccountActivationAllowed } from './legacy-password-policy';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -123,6 +124,7 @@ export class AdminService {
     if (!existing || existing.role === 'ADMIN') {
       throw new ApiError(404, 'USER_NOT_FOUND', 'Không tìm thấy tài khoản người dùng');
     }
+    await assertAccountActivationAllowed(existing, active);
     const updated = await this.prisma.user.update({
       where: { id },
       data: { active },

@@ -1,18 +1,18 @@
 import * as bcrypt from 'bcrypt';
 import type { PrismaClient } from '../generated/prisma/client';
 import { AUTH_POLICY } from '../modules/auth/auth-policy';
+import { hasLegacySeedPassword, LEGACY_SEED_PASSWORDS } from '../modules/auth/legacy-password-policy';
 
 export const SEED_ADMIN_ID = '99999999-9999-4999-8999-999999999901';
 export const SEED_ADMIN_EMAIL = 'admin@gmail.com';
 export const LEGACY_ADMIN_EMAIL = 'admin@brewlite.local';
-const LEGACY_PASSWORDS = { ADMIN: 'Admin123!', STAFF: 'Staff123!' } as const;
 
 function seedPassword(env: NodeJS.ProcessEnv, key: string): string {
   const password = env[key];
   if (!password || password.trim().length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
     throw new Error(`${key} phải được cấu hình riêng, từ 8 ký tự đến 72 byte UTF-8`);
   }
-  if (Object.values(LEGACY_PASSWORDS).some(value => value === password)) {
+  if (Object.values(LEGACY_SEED_PASSWORDS).some(value => value === password)) {
     throw new Error(`${key} không được dùng mật khẩu mặc định của bản seed cũ`);
   }
   return password;
@@ -40,7 +40,7 @@ export async function seedUsers(prisma: PrismaClient, env: NodeJS.ProcessEnv) {
         if (byId.role !== account.role || (byId.email !== account.email && !legacyAdmin)) {
           throw new Error(`Seed từ chối ID đã thuộc tài khoản khác: ${account.id}`);
         }
-        const usesDefault = await bcrypt.compare(LEGACY_PASSWORDS[account.role], byId.passwordHash);
+        const usesDefault = await hasLegacySeedPassword(byId);
         if (legacyAdmin || (usesDefault && byId.active)) {
           await tx.user.update({ where: { id: byId.id }, data: {
             ...(legacyAdmin ? { email: SEED_ADMIN_EMAIL } : {}), active: false,

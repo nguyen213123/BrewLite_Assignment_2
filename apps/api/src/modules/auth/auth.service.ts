@@ -1,4 +1,5 @@
 // Owner: TV4 — #6. Replace stubs here; keep public DTO/port contracts.
+import { assertAccountActivationAllowed } from './legacy-password-policy';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
@@ -139,6 +140,7 @@ export class AuthService implements AuthPort, IdentityPort, OnModuleInit {
       throw new ApiError(404, 'STAFF_NOT_FOUND', 'Không tìm thấy tài khoản nhân viên');
     }
 
+    await assertAccountActivationAllowed(existing, active);
     const updated = await this.prisma.user.update({
       where: { id: staffId },
       data: { active },
