@@ -1,5 +1,6 @@
 import { validate } from 'class-validator';
 import * as jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcrypt';
 import { seedAccounts, seedUsers } from '../../apps/api/src/seed/seed-users';
 import { AuthService } from '../../apps/api/src/modules/auth/auth.service';
 import { AUTH_POLICY } from '../../apps/api/src/modules/auth/auth-policy';
@@ -28,7 +29,7 @@ describe('Logic and security repairs', () => {
   });
 
   it('preserves existing seed passwords, roles and locked status on rerun', async () => {
-    const accounts = seedAccounts(seedEnv);
+    const accounts = await Promise.all(seedAccounts(seedEnv).map(async account => ({ ...account, passwordHash: await bcrypt.hash(account.password, 4), active: false })));
     const user = {
       findUnique: jest.fn(async ({ where }: { where: { email: string } }) => accounts.find(a => a.email === where.email)),
       upsert: jest.fn(),

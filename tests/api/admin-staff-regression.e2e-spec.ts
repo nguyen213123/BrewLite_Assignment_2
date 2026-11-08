@@ -56,6 +56,19 @@ describe('Admin and staff regressions', () => {
     };
   }
 
+  it('allows the exact money cap when all sizes fit and rolls back a larger-size overflow', async () => {
+    const valid = fixture();
+    for (const size of valid.state().sizes) size.price = 20000;
+    const saved = await valid.service.updateProduct('p', { expectedVersion: 2, price: 2000000000 });
+    expect(saved.price).toBe(2000000000);
+    expect(saved.sizes.map(size => size.price)).toEqual([2000000000, 2000000000]);
+    const overflow = fixture();
+    const before = structuredClone(overflow.state());
+    await expect(overflow.service.updateProduct('p', { expectedVersion: 2, price: 2000000000 }))
+      .rejects.toMatchObject({ response: { statusCode: 400, code: 'VALIDATION_ERROR' } });
+    expect(overflow.state()).toEqual(before);
+  });
+
   it('rejects an old stock snapshot after a checkout changes inventory', async () => {
     const f = fixture();
     await expect(f.service.updateIngredientStock('i', { stock: 200, expectedVersion: 2 }))

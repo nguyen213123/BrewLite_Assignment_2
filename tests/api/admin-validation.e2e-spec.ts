@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { AdminService } from '../../apps/api/src/modules/auth/admin.service';
-import { AdminUpdateProductDto, AdminUpdateToppingDto, AdminUpdateIngredientDto, AdminCreatePromotionDto, MAX_ADMIN_INTEGER } from '../../apps/api/src/modules/auth/dto/auth.dto';
+import { AdminUpdateProductDto, AdminUpdateToppingDto, AdminUpdateIngredientDto, AdminCreatePromotionDto, MAX_ADMIN_INTEGER, MAX_ADMIN_MONEY } from '../../apps/api/src/modules/auth/dto/auth.dto';
 
 describe('Admin input validation regressions', () => {
   it('rejects explicit null values while allowing omitted patch fields', async () => {
@@ -33,13 +33,24 @@ describe('Admin input validation regressions', () => {
     expect(await validate(plainToInstance(AdminUpdateIngredientDto, { expectedVersion: 1, stock: MAX_ADMIN_INTEGER }))).toEqual([]);
   });
 
+  it('uses the money cap separately from stock, use counts and versions', async () => {
+    for (const price of [2000000000, 2000000001]) {
+      const valid = price === 2000000000;
+      expect((await validate(plainToInstance(AdminUpdateProductDto, { expectedVersion: MAX_ADMIN_INTEGER, price }))).length === 0).toBe(valid);
+      expect((await validate(plainToInstance(AdminUpdateToppingDto, { price }))).length === 0).toBe(valid);
+      const voucher = { code: 'BOUNDARY', type: 'FIXED', value: price, minSubtotal: price, maxUses: MAX_ADMIN_INTEGER,
+        startsAt: '2026-01-01T00:00:00Z', endsAt: '2030-01-01T00:00:00Z' };
+      expect((await validate(plainToInstance(AdminCreatePromotionDto, voucher))).length === 0).toBe(valid);
+    }
+  });
+
   it('returns a validation error when shifting the base price would overflow a larger size', async () => {
     const tx = {
       product: { findUnique: async () => ({ price: 50000 }), updateMany: async () => ({ count: 1 }) },
       productSize: { findMany: async () => [{ id: 'l', price: 60000 }], update: jest.fn() },
     };
     const admin = new AdminService({ $transaction: async (work: (client: unknown) => Promise<unknown>) => work(tx) } as never);
-    await expect(admin.updateProduct('p', { expectedVersion: 1, price: MAX_ADMIN_INTEGER }))
+    await expect(admin.updateProduct('p', { expectedVersion: 1, price: MAX_ADMIN_MONEY }))
       .rejects.toMatchObject({ response: { code: 'VALIDATION_ERROR', statusCode: 400 } });
     expect(tx.productSize.update).not.toHaveBeenCalled();
   });

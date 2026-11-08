@@ -19,6 +19,7 @@ import { ifDefined, trimLower, trimUpper } from '../../../common/dto/shared.dto'
 import type { AuthRequest, LoginRequest } from '../../../common/contracts/api.generated';
 
 export const MAX_ADMIN_INTEGER = 2_147_483_647;
+export const MAX_ADMIN_MONEY = 2_000_000_000;
 
 const maxPasswordBytes = () => ValidateBy({ name: 'maxPasswordBytes', validator: {
   validate: (value: unknown) => typeof value === 'string' && Buffer.byteLength(value, 'utf8') <= 72,
@@ -52,7 +53,7 @@ export class AdminUpdateProductDto {
   expectedVersion!: number;
   @ValidateIf(ifDefined) @IsBoolean()
   active?: boolean;
-  @ValidateIf(ifDefined) @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
+  @ValidateIf(ifDefined) @IsInt() @Min(0) @Max(MAX_ADMIN_MONEY)
   price?: number;
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
   @ValidateIf(ifDefined) @IsString() @MinLength(1) @MaxLength(120)
@@ -61,7 +62,7 @@ export class AdminUpdateProductDto {
 export class AdminUpdateToppingDto {
   @ValidateIf(ifDefined) @IsBoolean()
   active?: boolean;
-  @ValidateIf(ifDefined) @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
+  @ValidateIf(ifDefined) @IsInt() @Min(0) @Max(MAX_ADMIN_MONEY)
   price?: number;
 }
 export class AdminUpdateIngredientDto {
@@ -75,11 +76,11 @@ export class AdminCreatePromotionDto {
   code!: string;
   @IsIn(['PERCENT', 'FIXED'])
   type!: 'PERCENT' | 'FIXED';
-  @IsInt() @Min(1) @Max(MAX_ADMIN_INTEGER)
+  @IsInt() @Min(1) @Max(MAX_ADMIN_MONEY)
   value!: number;
-  @IsInt() @Min(0) @Max(MAX_ADMIN_INTEGER)
+  @IsInt() @Min(0) @Max(MAX_ADMIN_MONEY)
   minSubtotal!: number;
-  @IsOptional() @IsInt() @Min(1) @Max(MAX_ADMIN_INTEGER)
+  @IsOptional() @IsInt() @Min(0) @Max(MAX_ADMIN_MONEY)
   maxDiscount?: number;
   @IsOptional() @IsInt() @Min(1) @Max(MAX_ADMIN_INTEGER)
   maxUses?: number;

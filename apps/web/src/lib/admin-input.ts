@@ -1,4 +1,9 @@
 export const MAX_ADMIN_QUANTITY = 2_147_483_647;
+export const MAX_ADMIN_MONEY = 2_000_000_000;
+
+export function parseAdminMoney(raw: string | number, max = MAX_ADMIN_MONEY): number | null {
+  return parseAdminQuantity(raw, Math.min(max, MAX_ADMIN_MONEY));
+}
 
 /** Empty inputs must never become an unintended zero-price or stock update. */
 export function parseAdminQuantity(raw: string | number, max = MAX_ADMIN_QUANTITY): number | null {

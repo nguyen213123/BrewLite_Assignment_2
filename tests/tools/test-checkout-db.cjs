@@ -11,11 +11,17 @@ if (!['localhost', '127.0.0.1', '[::1]'].includes(server.hostname)) throw new Er
 server.searchParams.delete('schema');
 const name = `brewlite_checkout_${randomBytes(6).toString('hex')}`;
 async function main() {
-  const admin = new Client({ connectionString: server.toString(), connectionTimeoutMillis: 5000 });
-  await admin.connect();
+  // Do not hold an idle TCP connection while synchronous child test processes run.
+  // Docker/WSL can reset it before cleanup; open a short-lived connection per operation.
+  async function adminQuery(sql) {
+    const client = new Client({ connectionString: server.toString(), connectionTimeoutMillis: 5000 });
+    client.on('error', () => {}); // Queries still reject; avoid an unhandled idle-client event.
+    try { await client.connect(); return await client.query(sql); }
+    finally { await client.end(); }
+  }
   let created = false;
   try {
-    await admin.query(`CREATE DATABASE "${name}"`); created = true;
+    await adminQuery(`CREATE DATABASE "${name}"`); created = true;
     const target = new URL(server); target.pathname = `/${name}`;
     const env = { ...process.env, DATABASE_URL: target.toString(), RUN_DB_TESTS: '1' };
     function run(args, cwd) {
@@ -25,8 +31,7 @@ async function main() {
     run([backendRequire.resolve('prisma/build/index.js'), 'migrate', 'deploy'], path.join(root, 'apps', 'api'));
     run([process.env.npm_execpath, 'test'], root);
   } finally {
-    if (created) await admin.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
-    await admin.end();
+    if (created) await adminQuery(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
   }
 }
 main().catch(error => { console.error(error.message); process.exitCode = 1; });

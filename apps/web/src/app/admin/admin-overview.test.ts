@@ -7,7 +7,7 @@ import { it } from 'node:test';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
-import { MAX_ADMIN_QUANTITY, parseAdminQuantity } from '../../lib/admin-input.ts';
+import { MAX_ADMIN_MONEY, MAX_ADMIN_QUANTITY, parseAdminMoney, parseAdminQuantity } from '../../lib/admin-input.ts';
 
 it('updates overview product, voucher and stock counts immediately after admin actions', async () => {
   const nodeRequire = createRequire(import.meta.url);
@@ -41,7 +41,7 @@ it('updates overview product, voucher and stock counts immediately after admin a
         : { id: 'i', stock: 0, lowStock: true, version: 2 } };
     if (id === '@/components/OrderStatusBadge') return { __esModule: true, default: () => null };
     if (id === '@/lib/format') return { formatVnd: String };
-    if (id === '@/lib/admin-input') return { MAX_ADMIN_QUANTITY, parseAdminQuantity };
+    if (id === '@/lib/admin-input') return { MAX_ADMIN_MONEY, MAX_ADMIN_QUANTITY, parseAdminMoney, parseAdminQuantity };
     throw new Error(`Unexpected module: ${id}`);
   };
   const compiled = { exports: {} as { default: () => React.ReactElement<{ children: React.ReactElement }> } };

@@ -187,6 +187,23 @@ npm --prefix apps/api run seed
   - Seed sử dụng ID và mã cố định nên chạy lại nhiều lần **không nhân bản dữ liệu**, không xóa đơn hàng lịch sử và không xóa các dữ liệu ngoài danh sách seed.
   - **Cảnh báo:** Mỗi lần chạy lại seed, tồn kho (`stock`), phiên bản (`version`) của các nguyên liệu mẫu và số lượt đã dùng (`usedCount`) của mã khuyến mãi sẽ được **đặt lại về giá trị demo ban đầu**. Chỉ chạy seed trên database phát triển/demo; không chạy trên môi trường có dữ liệu thật cần giữ.
 
+### Nâng cấp tài khoản seed từ PR cũ
+
+Admin cũ được nhận diện **đồng thời** bằng ID `99999999-9999-4999-8999-999999999901`, email `admin@brewlite.local` và role `ADMIN`. Seed đổi email sang `admin@gmail.com` trên cùng ID, giữ hash mật khẩu và quyền nhưng **khóa tài khoản**. Không xóa user nên lịch sử đơn/sự kiện còn nguyên. Nếu email mới đã thuộc ID khác, seed dừng và không đổi quyền của tài khoản đó; cần xử lý xung đột thủ công trước khi tiếp tục.
+
+Seed cũng khóa tài khoản seed hiện tại nếu hash còn khớp mật khẩu mặc định cũ (`Admin123!` hoặc `Staff123!` theo role), và từ chối dùng lại các mật khẩu này trong biến môi trường. Các tài khoản hợp lệ dùng mật khẩu riêng được giữ nguyên mật khẩu/quyền/trạng thái khóa khi seed lại, kể cả khi thay biến môi trường.
+
+Chưa đưa database nâng cấp vào sử dụng lại cho đến khi đã khóa hoặc đổi mật khẩu các tài khoản mặc định cũ. Với admin, sau khi chạy seed nâng cấp, đặt mật khẩu **mới** trong môi trường rồi chạy lệnh riêng (không chạy lại catalog seed để đổi mật khẩu):
+
+```powershell
+cd apps/api
+$env:SEED_ADMIN_PASSWORD = 'mat-khau-moi-cua-ban'
+npm run build:seed
+npm run seed:reset-admin
+```
+
+Lệnh `seed:reset-admin` chỉ đổi mật khẩu và kích hoạt user có đúng ID/email/role admin seed hiện tại; không tác động kho, voucher hoặc tài khoản khác. Chỉ chạy khi chủ động muốn mở khóa admin. Với staff còn mật khẩu mặc định cũ, giữ khóa và cấp một tài khoản staff mới bằng mật khẩu riêng. Trước khi kích hoạt lại database từng dùng tài khoản mặc định cũ, đổi `JWT_SECRET` và khởi động lại API để thu hồi các JWT cũ. Khóa tài khoản từ seed chặn token cũ ngay; đổi mật khẩu đơn thuần không tự thu hồi JWT đã cấp.
+
 **Nâng cấp từ phiên bản tồn kho theo sản phẩm:** đọc [quy trình nâng cấp](docs/requirements/inventory-concurrency.md#nâng-cấp-database-đang-có-dữ-liệu) trước khi deploy. Ngừng nhận đơn mới và xử lý các đơn cũ bằng phiên bản cũ, sau đó dừng ghi trong lúc migration. Migration guard dừng nếu còn đơn đang giữ kho nhưng chưa có snapshot nguyên liệu; không dùng seed để bỏ qua kiểm tra hoặc reset dữ liệu cần giữ.
 
 ---

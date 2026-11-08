@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ApiError } from '../../common/errors/api-error';
-import { MAX_ADMIN_INTEGER } from './dto/auth.dto';
+import { MAX_ADMIN_MONEY } from './dto/auth.dto';
 import type {
   AdminCreatePromotionDto,
   AdminUpdateIngredientDto,
@@ -196,7 +196,7 @@ export class AdminService {
           const sizes = await tx.productSize.findMany({ where: { productId: id } });
           for (const size of sizes) {
             const nextPrice = Math.max(0, size.price + diff);
-            if (nextPrice > MAX_ADMIN_INTEGER) {
+            if (nextPrice > MAX_ADMIN_MONEY) {
               throw new ApiError(400, 'VALIDATION_ERROR', 'Giá sau điều chỉnh vượt giới hạn cho phép của một size');
             }
             await tx.productSize.update({
@@ -315,6 +315,9 @@ export class AdminService {
   }
 
   async createPromotion(input: AdminCreatePromotionDto) {
+    if (input.type === 'FIXED' && input.maxDiscount != null) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Mã giảm tiền cố định không có mức giảm tối đa');
+    }
     if (input.type === 'PERCENT' && (input.value < 1 || input.value > 100)) {
       throw new ApiError(400, 'VALIDATION_ERROR', 'Phần trăm giảm giá phải từ 1% đến 100%');
     }

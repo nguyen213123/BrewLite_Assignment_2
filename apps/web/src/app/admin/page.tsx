@@ -8,7 +8,7 @@ import { getAuthSnapshot, getAuthServerSnapshot, subscribeAuth } from '@/lib/aut
 import OrderStatusBadge from '@/components/OrderStatusBadge';
 import type { OrderStatus } from '@/lib/contracts/api.generated';
 import { formatVnd } from '@/lib/format';
-import { MAX_ADMIN_QUANTITY, parseAdminQuantity } from '@/lib/admin-input';
+import { MAX_ADMIN_MONEY, MAX_ADMIN_QUANTITY, parseAdminMoney, parseAdminQuantity } from '@/lib/admin-input';
 
 type AdminTab = 'staff' | 'overview' | 'catalog' | 'inventory' | 'promotions';
 
@@ -341,8 +341,8 @@ function AdminPortalContent() {
     if (busyItemId) return;
     const raw = priceDrafts[product.id];
     if (raw === undefined) return;
-    const maxPrice = MAX_ADMIN_QUANTITY - Math.max(0, ...product.sizes.map((size) => size.price - product.price));
-    const parsed = parseAdminQuantity(raw, maxPrice);
+    const maxPrice = MAX_ADMIN_MONEY - Math.max(0, ...product.sizes.map((size) => size.price - product.price));
+    const parsed = parseAdminMoney(raw, maxPrice);
     if (parsed === null) {
       setError(`Giá bán phải là số nguyên từ 0 đến ${formatVnd(maxPrice)}.`);
       return;
@@ -436,6 +436,14 @@ function AdminPortalContent() {
       setError('Mã khuyến mãi phải dài 3–32 ký tự, chỉ gồm chữ A–Z, số, _ và -.');
       return;
     }
+    const value = parseAdminMoney(promoValue, promoType === 'PERCENT' ? 100 : MAX_ADMIN_MONEY);
+    const minSubtotal = parseAdminMoney(promoMinSubtotal);
+    const maxDiscount = promoType === 'PERCENT' && promoMaxDiscount.trim() !== '' ? parseAdminMoney(promoMaxDiscount) : undefined;
+    const maxUses = promoMaxUses.trim() !== '' ? parseAdminQuantity(promoMaxUses) : undefined;
+    if (value === null || value < 1 || minSubtotal === null || maxDiscount === null || maxUses === null || maxUses === 0) {
+      setError('Kiểm tra giá trị voucher: tiền từ 0 đến 2 tỷ đồng, phần trăm từ 1 đến 100 và số lượt phải là số nguyên dương.');
+      return;
+    }
     setPromoBusy(true);
     try {
       const now = new Date();
@@ -443,12 +451,10 @@ function AdminPortalContent() {
       const created = await apiPost<AdminPromotionItem>('/auth/admin/promotions', {
         code,
         type: promoType,
-        value: Number(promoValue),
-        minSubtotal: Number(promoMinSubtotal) || 0,
-        ...(promoType === 'PERCENT' && Number(promoMaxDiscount) > 0
-          ? { maxDiscount: Number(promoMaxDiscount) }
-          : {}),
-        ...(Number(promoMaxUses) > 0 ? { maxUses: Number(promoMaxUses) } : {}),
+        value,
+        minSubtotal,
+        ...(maxDiscount !== undefined ? { maxDiscount } : {}),
+        ...(maxUses !== undefined ? { maxUses } : {}),
         startsAt: now.toISOString(),
         endsAt: ends.toISOString(),
       });
@@ -1078,7 +1084,7 @@ function AdminPortalContent() {
                           type="number"
                           min={0}
                           step={1000}
-                          max={MAX_ADMIN_QUANTITY - Math.max(0, ...product.sizes.map((size) => size.price - product.price))}
+                          max={MAX_ADMIN_MONEY - Math.max(0, ...product.sizes.map((size) => size.price - product.price))}
                           value={draftPrice}
                           onChange={(e) =>
                             setPriceDrafts((prev) => ({ ...prev, [product.id]: e.target.value }))
@@ -1301,6 +1307,7 @@ function AdminPortalContent() {
                     <input
                       type="number"
                       min={1}
+                      max={promoType === 'PERCENT' ? 100 : MAX_ADMIN_MONEY}
                       value={promoValue}
                       onChange={(e) => setPromoValue(e.target.value)}
                       required
@@ -1318,6 +1325,7 @@ function AdminPortalContent() {
                       type="number"
                       min={0}
                       step={5000}
+                      max={MAX_ADMIN_MONEY}
                       value={promoMinSubtotal}
                       onChange={(e) => setPromoMinSubtotal(e.target.value)}
                       className="mt-1 block w-full rounded-xl border border-[#decbb4] bg-[#faf6ec] px-3 py-2 text-xs font-bold text-[#4a2e20]"
@@ -1330,6 +1338,7 @@ function AdminPortalContent() {
                     <input
                       type="number"
                       min={1}
+                      max={MAX_ADMIN_QUANTITY}
                       value={promoMaxUses}
                       onChange={(e) => setPromoMaxUses(e.target.value)}
                       className="mt-1 block w-full rounded-xl border border-[#decbb4] bg-[#faf6ec] px-3 py-2 text-xs font-bold text-[#4a2e20]"
@@ -1344,8 +1353,9 @@ function AdminPortalContent() {
                     </label>
                     <input
                       type="number"
-                      min={1000}
-                      step={5000}
+                      min={0}
+                      step={1}
+                      max={MAX_ADMIN_MONEY}
                       value={promoMaxDiscount}
                       onChange={(e) => setPromoMaxDiscount(e.target.value)}
                       className="mt-1 block w-full rounded-xl border border-[#decbb4] bg-[#faf6ec] px-3 py-2 text-xs font-bold text-[#4a2e20]"
@@ -1387,7 +1397,7 @@ function AdminPortalContent() {
                         </span>
                         <span className="text-sm font-extrabold text-[#2d6a4f]">
                           {promo.type === 'PERCENT'
-                            ? `Giảm ${promo.value}%${promo.maxDiscount ? ` (tối đa ${formatVnd(promo.maxDiscount)})` : ''}`
+                            ? `Giảm ${promo.value}%${promo.maxDiscount !== null ? ` (tối đa ${formatVnd(promo.maxDiscount)})` : ''}`
                             : `Giảm trực tiếp ${formatVnd(promo.value)}`}
                         </span>
                         <span

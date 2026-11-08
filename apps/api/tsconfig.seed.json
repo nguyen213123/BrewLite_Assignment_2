@@ -8,6 +8,6 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["src/seed/seed.ts"],
+  "include": ["src/seed/**/*.ts"],
   "exclude": []
 }
