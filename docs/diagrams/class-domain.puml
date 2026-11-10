@@ -1,0 +1,102 @@
+@startuml
+!pragma layout smetana
+hide empty members
+skinparam backgroundColor white
+skinparam shadowing false
+title Class-01 · Domain đặt đơn BrewLite
+
+class User {
+  id: UUID
+  email: String
+  passwordHash: String
+  role: Role
+  active: Boolean
+  loyaltyPoints: Int
+}
+
+class Product {
+  id: UUID
+  name: String
+  price: Int
+  active: Boolean
+}
+class ProductSize {
+  size: Size
+  price: Int
+}
+class Topping {
+  id: UUID
+  name: String
+  price: Int
+}
+
+class Order {
+  id: UUID
+  code: String
+  status: OrderStatus
+  reservationStatus: ReservationStatus
+  subtotal: Int
+  discount: Int
+  total: Int
+  version: Int
+}
+class OrderItem {
+  productName: String
+  size: Size
+  sizePrice: Int
+  qty: Int
+  lineTotal: Int
+}
+class OrderItemTopping {
+  name: String
+  price: Int
+}
+
+class Payment {
+  id: UUID
+  amount: Int
+  method: PaymentMethod
+  status: PaymentStatus
+  isDuplicate: Boolean
+}
+class Promotion {
+  code: String
+  type: PromotionType
+  value: Int
+  usedCount: Int
+  maxUses: Int?
+}
+class "LoyaltyTransaction\n(LoyaltyEntry)" as LoyaltyEntry {
+  kind: LoyaltyKind
+  points: Int
+  createdAt: DateTime
+}
+
+User "1" -- "0..*" Order : đặt
+Order "1" *-- "1..*" OrderItem : snapshot
+Product "1" -- "0..*" OrderItem : nguồn
+Product "1" *-- "0..*" ProductSize
+OrderItem "1" *-- "0..*" OrderItemTopping
+Topping "1" -- "0..*" OrderItemTopping : nguồn
+Order "1" -- "0..*" Payment : giao dịch
+Promotion "0..1" -- "0..*" Order : áp dụng
+Order "1" -- "0..*" LoyaltyEntry : sổ cái
+User "1" -- "0..*" LoyaltyEntry : sở hữu
+
+note bottom of Order
+OrderStatus: PENDING, PAID, PAYMENT_FAILED,
+PREPARING, READY, COMPLETED, CANCELLED
+ReservationStatus: HELD, CONSUMED, RELEASED
+end note
+note bottom of Payment
+PaymentMethod: WALLET, CARD
+PaymentStatus: SUCCEEDED, FAILED, REFUNDED
+end note
+note bottom of LoyaltyEntry
+LoyaltyKind: EARN, REVERSE
+Tối đa một bút toán mỗi loại trên một đơn.
+end note
+note top of User : Role: CUSTOMER, STAFF, ADMIN
+note top of Promotion : PromotionType: FIXED, PERCENT
+note top of ProductSize : Size: S, M, L
+@enduml

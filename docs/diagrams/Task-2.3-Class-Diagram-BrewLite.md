@@ -17,7 +17,7 @@ subtitle: "Assignment 2 – Task 2.3 – Mô hình lớp mức miền nghiệp v
 
 ![Sơ đồ lớp mức Domain của hệ thống BrewLite](./class-domain.svg)
 
-> *Nguồn sơ đồ:* `class-domain.puml` (`docs/diagrams/class-domain.puml`), bản kết xuất vector `class-domain.svg` và ảnh độ phân giải cao `class-domain.png`.
+> *Nguồn sơ đồ:* [`class-domain.puml`](class-domain.puml) và [bản kết xuất SVG](class-domain.svg). Các bảng dưới đây bổ sung thực thể công thức, giữ kho và idempotency. Xem [ERD](erd.md) để đối chiếu toàn bộ schema.
 
 ---
 
@@ -34,7 +34,7 @@ Sơ đồ mô hình hóa đầy đủ **7 thực thể miền nghiệp vụ bắ
 | 5 | **Ingredient & OrderIngredientHold** | Quản lý tồn kho ở mức nguyên liệu (`GRAM`, `ML`, `PIECE`), kiểm soát tranh chấp đồng thời bằng khóa lạc quan (`version`) và lưu bản ghi giữ nguyên liệu (`OrderIngredientHold`) cho từng đơn. | `id: UUID {PK}`, `name: string`, `unit: IngredientUnit`, `stock: int (>= 0)`, `packageSize: int (> 0)`, `packageLabel: string`, `version: int = 0`; kèm bản ghi giữ kho `OrderIngredientHold(orderId, ingredientId, amount > 0)`. | `reserve(amount: int, expectedVersion: int)`, `release(amount: int)`, `consume()` | FR-03, FR-12, FR-20, NFR-12 |
 | 6 | **Payment** *(kèm `IdempotencyRecord`)* | Quản lý giao dịch thanh toán không tiền mặt, liên kết 1–1 với bản ghi `IdempotencyRecord` để chống tạo đơn/trừ tiền lặp và đánh dấu giao dịch trùng (`isDuplicate`). | `id: UUID {PK}`, `orderId: UUID {FK}`, `idempotencyRecordId: UUID {unique, FK}`, `idempotencyKey: string`, `amount: int (= Order.total)`, `method: PaymentMethod`, `status: PaymentStatus`, `isDuplicate: boolean = false`, `createdAt: DateTime`, `updatedAt: DateTime`. | `markSucceeded()`, `markFailed()`, `markRefunded()` | FR-13, FR-14, FR-15, NFR-12 |
 | 7 | **Promotion** | Quản lý mã khuyến mãi, loại giảm giá (`FIXED` / `PERCENT`), điều kiện đơn tối thiểu (`minSubtotal`), trần giảm tối đa (`maxDiscount`), thời hạn hiệu lực và giới hạn lượt dùng (`maxUses`). | `id: UUID {PK}`, `code: string {unique}`, `type: PromotionType`, `value: int (> 0)`, `minSubtotal: int = 0`, `maxDiscount: int [0..1]`, `maxUses: int [0..1]`, `usedCount: int = 0 (<= maxUses)`, `version: int = 0`, `startsAt: DateTime`, `endsAt: DateTime`, `active: boolean = true`. | `isValidFor(subtotal: int, now: DateTime)`, `calculateDiscount(subtotal: int)`, `reserveUse()`, `releaseUse()` | FR-22, FR-24 |
-| 8 | **LoyaltyTransaction (`LoyaltyEntry`)** | Sổ cái lưu vết lịch sử cộng điểm thưởng (`EARN`) khi đơn hàng thanh toán thành công và bút toán đảo điểm (`REVERSE`) khi hủy đơn đã thanh toán. | `id: UUID {PK}`, `userId: UUID {FK}`, `orderId: UUID {FK}`, `kind: LoyaltyKind`, `points: int`, `createdAt: DateTime`; ràng buộc duy nhất `@@unique([orderId, kind])`. | `createEarn(order: Order)`, `createReverse(order: Order)` | FR-20, FR-23 |
+| 8 | **LoyaltyTransaction (`LoyaltyEntry`)** | Sổ cái lưu vết lịch sử cộng điểm thưởng (`EARN`) khi đơn hoàn tất và bút toán đảo điểm (`REVERSE`) khi hủy hợp lệ nếu đã có EARN. | `id: UUID {PK}`, `userId: UUID {FK}`, `orderId: UUID {FK}`, `kind: LoyaltyKind`, `points: int`, `createdAt: DateTime`; ràng buộc duy nhất `@@unique([orderId, kind])`. | `createEarn(order: Order)`, `createReverse(order: Order)` | FR-20, FR-23 |
 
 ---
 
@@ -50,7 +50,7 @@ Toàn bộ các trạng thái và phân loại nghiệp vụ trong hệ thống 
 | **PromotionType** | `FIXED`, `PERCENT` *(mở rộng logic `FREE_TOPPING`)* | Hình thức tính chiết khấu khuyến mãi: giảm số tiền cố định (`FIXED`) hoặc giảm theo tỷ lệ phần trăm có trần `maxDiscount` (`PERCENT`). |
 | **PaymentMethod** | `WALLET`, `CARD` | Hai phương thức thanh toán không tiền mặt cốt lõi (Ví điện tử và Thẻ ngân hàng, hỗ trợ cổng mô phỏng và mở rộng VNPay/Stripe Sandbox). |
 | **PaymentStatus** | `SUCCEEDED`, `FAILED`, `REFUNDED` | Trạng thái của một bản ghi giao dịch thanh toán: thành công (`SUCCEEDED`), thất bại (`FAILED`) hoặc đã hoàn tiền (`REFUNDED`). |
-| **LoyaltyKind** | `EARN`, `REVERSE` | Loại bút toán trên sổ cái điểm thưởng (`LoyaltyEntry`): cộng điểm khi thanh toán thành công (`EARN`) hoặc thu hồi điểm khi hủy đơn đã thanh toán (`REVERSE`). |
+| **LoyaltyKind** | `EARN`, `REVERSE` | Loại bút toán trên sổ cái điểm thưởng (`LoyaltyEntry`): cộng điểm khi đơn hoàn tất (`EARN`) hoặc thu hồi điểm khi hủy đơn đã thanh toán (`REVERSE`). |
 | **Size (`DrinkSize`)** | `S`, `M`, `L` | Ba kích cỡ ly đồ uống, đồng thời quyết định giá theo size (`ProductSize`) và hệ số định lượng nguyên liệu công thức (`S = 100%`, `M = 125%`, `L = 150%` cho đơn vị `GRAM`/`ML`). |
 | **IngredientUnit** | `GRAM`, `ML`, `PIECE` | Đơn vị tính gốc của nguyên liệu trong kho (`Ingredient`): gram (`GRAM`), mililít (`ML`) và cái/viên (`PIECE` – không nhân hệ số size). |
 
@@ -91,7 +91,7 @@ Thay vì lưu một cột `stock` đơn giản trên bảng `Product` (vốn kh�
 | **Promotion** | `0..1` | Association (`áp dụng mã`) | `0..*` | **Order** | Mỗi đơn hàng áp dụng tối đa `1` mã khuyến mãi (`0..1`); một mã khuyến mãi có thể áp dụng cho `0..*` đơn hàng trong giới hạn `maxUses`. |
 | **Order** | `1` | Association (`thanh toán bởi`) | `0..*` | **Payment** | Một đơn hàng có thể có `0..*` lần thử thanh toán (khi thất bại rồi thử lại), nhưng chỉ có tối đa `1` giao dịch đạt trạng thái `SUCCEEDED` (partial unique index). |
 | **User** | `1` | Association (`sở hữu sổ cái điểm`) | `0..*` | **LoyaltyTransaction (`LoyaltyEntry`)** | Một người dùng có `0..*` bút toán biến động điểm thưởng theo lịch sử mua và hủy đơn. |
-| **Order** | `1` | Association (`sinh / đảo điểm`) | `0..2` | **LoyaltyTransaction (`LoyaltyEntry`)** | Mỗi đơn hàng có tối đa `1` bút toán cộng điểm (`kind = EARN`) khi `PAID` và tối đa `1` bút toán đảo điểm (`kind = REVERSE`) nếu đơn `PAID` bị hủy trước khi pha chế (`@@unique([orderId, kind])`). |
+| **Order** | `1` | Association (`sinh / đảo điểm`) | `0..2` | **LoyaltyTransaction (`LoyaltyEntry`)** | Mỗi đơn hàng có tối đa `1` bút toán cộng điểm (`kind = EARN`) khi `COMPLETED` và tối đa `1` bút toán đảo điểm (`kind = REVERSE`) nếu hủy hợp lệ và có EARN (`@@unique([orderId, kind])`). |
 
 ---
 
@@ -127,8 +127,8 @@ Bố cục sơ đồ `class-domain.svg` được thiết kế lấy lớp **`Ord
 ## 6.5. Chặng 5: Ghi sổ cái điểm thưởng (`LoyaltyEntry`) và Pha chế hoàn tất
 - **Đường đi trên sơ đồ:** `Order` (Trung tâm) `-->` `LoyaltyTransaction (LoyaltyEntry)` (Góc trên – Bên trái) `-->` `User` (Hàng giữa – Bên trái).
 - **Quy tắc và Thao tác:**
-  - Ngay trong transaction khi `Order` chuyển sang `PAID`, hệ thống gọi `LoyaltyEntry.createEarn(order)` tạo bút toán `kind = EARN` với `points = floor(total / 10000)` và gọi `User.addLoyaltyPoints(points)`.
-  - Nếu đơn đang `PAID` (chưa pha chế) mà bị hủy (`PAID → CANCELLED`), hệ thống hoàn trả kho nguyên liệu (`CONSUMED → RELEASED`), đồng thời gọi `LoyaltyEntry.createReverse(order)` tạo bút toán `kind = REVERSE` (`points = -earned`) và trừ lại điểm của `User`.
+  - Khi STAFF chuyển đơn hợp lệ sang `COMPLETED`, dịch vụ loyalty ghi `EARN` với `floor(total / 10000)` điểm trong transaction.
+  - Nếu đơn đang `PAID` (chưa pha chế) mà bị hủy (`PAID → CANCELLED`), hệ thống hoàn trả kho nguyên liệu (`CONSUMED → RELEASED`), đồng thời ghi bút toán `REVERSE` nếu đã có EARN.
   - Với đơn hợp lệ, nhân viên pha chế (`User.role == STAFF`) lần lượt cập nhật trạng thái đơn qua `Order.assertTransition()`: `PAID → PREPARING → READY → COMPLETED`.
 
 ---

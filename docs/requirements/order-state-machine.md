@@ -38,13 +38,13 @@ Mọi lỗi ném ra làm transaction của người gọi rollback, nên trạng
 
 **Thử lại sau thất bại (`prepareRetry`).** Chỉ cho đơn `PAYMENT_FAILED`. Cập nhật có điều kiện (`status = PAYMENT_FAILED`, `reservationStatus = RELEASED`, `version`) được thực hiện **trước**, nên nhiều lần thử đồng thời xếp hàng trên dòng đơn và chỉ một lần giữ được kho. Sau đó kiểm tra lại mã ưu đãi (`price`, giữ nguyên discount và total đã lưu) rồi `reserve` lượt ưu đãi và kho. Không giữ lại được (`OUT_OF_STOCK`, `PROMOTION_*`) thì rollback toàn bộ: đơn vẫn `PAYMENT_FAILED`/`RELEASED`, không có event, không tồn kho nào bị giữ. Giá không được tính lại.
 
-**Hủy đơn (`POST /orders/{id}/cancel`).** Dùng cùng `transition`. Riêng đơn `PAID`, trong cùng transaction: payment `SUCCEEDED` → `REFUNDED` (mock refund) và `LoyaltyTransactionsPort.reverse` đảo điểm. Không hủy được PREPARING, READY, COMPLETED (`409 INVALID_ORDER_TRANSITION`).
+**Hủy đơn (`POST /orders/{id}/cancel`).** Dùng cùng `transition`. Riêng đơn `PAID`, trong cùng transaction: payment `SUCCEEDED` → `REFUNDED` (mock refund) và `LoyaltyTransactionsPort.reverse` đảo điểm nếu đơn đã có EARN. Không hủy được PREPARING, READY, COMPLETED (`409 INVALID_ORDER_TRANSITION`).
 
 **Cập nhật pha chế (`PATCH /orders/{id}/status`).** Chỉ STAFF (guard ở controller). Chỉ nhận PREPARING, READY, COMPLETED, đúng thứ tự, không bỏ bước.
 
 ## Điểm phối hợp với module khác
 
-- **TV5 (Payment):** gọi `transition(PAID | PAYMENT_FAILED)` với `expectedVersion` lấy từ đơn vừa đọc, và `prepareRetry` cho lần thử lại; không tự cập nhật `Order.status`. Việc cộng điểm (`LoyaltyTransactionsPort.earn`) vẫn do luồng payment gọi sau khi `transition(PAID)` thành công.
+- **TV5 (Payment):** gọi `transition(PAID | PAYMENT_FAILED)` với `expectedVersion` lấy từ đơn vừa đọc, và `prepareRetry` cho lần thử lại; không tự cập nhật `Order.status`. Điểm được cộng trong `OrdersService.transition` khi STAFF xác nhận `COMPLETED` và thanh toán chính hợp lệ.
 - **TV4 (Loyalty):** `reverse(tx, order)` được gọi khi hủy đơn PAID và phải tự chống đảo lặp bằng unique `(orderId, REVERSE)`.
 - **Refund mock:** hiện `OrdersService.cancel` cập nhật `Payment.status` SUCCEEDED → REFUNDED trực tiếp vì chưa có port refund. Nếu TV5 muốn sở hữu bước này, cần thêm một port riêng qua PR hợp đồng.
 

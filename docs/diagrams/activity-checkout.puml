@@ -1,0 +1,69 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+title Activity-01 · Từ menu đến xác nhận đơn
+|Khách hàng|
+start
+:Xem menu và chọn món;
+:Tùy chỉnh size và topping;
+:Chọn dòng giỏ và vào checkout;
+|Next.js|
+if (Có phiên đăng nhập?) then (Có)
+else (Chưa)
+  :Giữ giỏ và chuyển đến đăng nhập;
+  |Khách hàng|
+  :Đăng nhập;
+  |Next.js|
+  if (Đăng nhập thành công?) then (Có)
+  else (Không)
+    :Hiển thị lỗi đăng nhập;
+    stop
+  endif
+endif
+:Gửi báo giá và yêu cầu tạo đơn đã xác nhận;
+|NestJS / PostgreSQL|
+:Kiểm tra JWT, payload, giá và mã ưu đãi;
+if (Dữ liệu và báo giá hợp lệ?) then (Có)
+else (Không)
+  |Next.js|
+  :Hiển thị lỗi và giữ giỏ;
+  stop
+endif
+|NestJS / PostgreSQL|
+if (Giữ đủ nguyên liệu?) then (Có)
+  :Commit đơn PENDING và snapshot giữ kho;
+else (Hết hàng)
+  :Rollback giao dịch;
+  |Next.js|
+  :Báo hết hàng và cho sửa giỏ;
+  stop
+endif
+|Next.js|
+if (Giá khác báo giá?) then (Có)
+  |Khách hàng|
+  if (Xác nhận giá mới?) then (Có)
+  else (Hủy)
+    |NestJS / PostgreSQL|
+    :Hủy đơn và trả kho;
+    stop
+  endif
+endif
+|Khách hàng|
+:Chọn Ví hoặc Thẻ mô phỏng;
+|NestJS / PostgreSQL|
+:Xử lý thanh toán với Idempotency-Key;
+if (Thành công?) then (Có)
+  :Đơn PAID và giữ kho CONSUMED;
+  |Next.js|
+  :Đọc trạng thái đơn mới;
+  :Cập nhật giỏ và hiện xác nhận;
+  |Khách hàng|
+  :Xem lịch sử và trạng thái đơn;
+else (Thất bại)
+  |NestJS / PostgreSQL|
+  :Đơn PAYMENT_FAILED và trả kho;
+  |Next.js|
+  :Giữ giỏ và mở thao tác thử lại;
+endif
+stop
+@enduml
