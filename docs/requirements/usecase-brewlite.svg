@@ -162,7 +162,7 @@
   <g transform="translate(765, 572)">
     <ellipse cx="0" cy="0" rx="116" ry="27" fill="#ffffff" stroke="#1e293b" stroke-width="1.3"/>
     <text x="0" y="-7" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">UC-08</text>
-    <text x="0" y="8" text-anchor="middle" font-size="10.8" fill="#1e293b">Tích / hoàn điểm thưởng</text>
+    <text x="0" y="8" text-anchor="middle" font-size="10.8" fill="#1e293b">Tích điểm khi COMPLETED</text>
     <text x="0" y="21" text-anchor="middle" font-size="10.5" fill="#475569">(Should)</text>
   </g>
 
@@ -227,9 +227,9 @@
   <line x1="649" y1="500" x2="481" y2="510" stroke="#1e293b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#open-arrow)"/>
   <text x="568" y="492" text-anchor="middle" font-size="10.8" fill="#0f172a">«extend»</text>
 
-  <!-- UC-08 <<extend>> UC-06 -->
-  <line x1="652" y1="566" x2="473" y2="524" stroke="#1e293b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#open-arrow)"/>
-  <text x="558" y="556" text-anchor="middle" font-size="10.8" fill="#0f172a">«extend»</text>
+  <!-- UC-08: extension of UC-11 only when COMPLETED -->
+  <line x1="652" y1="586" x2="473" y2="753" stroke="#1e293b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#open-arrow)"/>
+  <text x="558" y="670" text-anchor="middle" font-size="10.8" fill="#0f172a">«extend»</text>
 
   <!-- UC-05 <<extend>> [chưa đăng nhập] UC-06 -->
   <line x1="365" y1="606" x2="365" y2="542" stroke="#1e293b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#open-arrow)"/>
