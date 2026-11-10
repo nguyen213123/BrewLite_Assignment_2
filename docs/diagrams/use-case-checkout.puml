@@ -1,0 +1,25 @@
+@startuml
+!pragma layout smetana
+left to right direction
+skinparam backgroundColor white
+skinparam shadowing false
+actor "Khách hàng" as Customer
+actor "Cổng sandbox\n(tùy chọn)" as Gateway
+rectangle "BrewLite" {
+  usecase "Đặt và thanh toán đơn\nUC-06" as Checkout
+  usecase "Xác thực khách" as Auth
+  usecase "Báo giá giỏ" as Quote
+  usecase "Tạo đơn và giữ nguyên liệu" as Order
+  usecase "Xử lý thanh toán" as Pay
+  usecase "Xác minh và xem xác nhận" as Confirm
+  usecase "Thử lại khi thất bại" as Retry
+}
+Customer --> Checkout
+Checkout ..> Auth : <<include>>
+Checkout ..> Quote : <<include>>
+Checkout ..> Order : <<include>>
+Checkout ..> Pay : <<include>>
+Checkout ..> Confirm : <<include>>
+Retry ..> Pay : <<extend>>
+Gateway -- Pay
+@enduml

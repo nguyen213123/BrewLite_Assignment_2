@@ -40,12 +40,12 @@ Theo đúng sơ đồ đề: mọi cạnh không có trong bảng đều bị `a
 | Từ | Sang | Trigger/quyền | Hiệu ứng nguyên tử |
 | --- | --- | --- | --- |
 | Chưa có | PENDING | CUSTOMER tạo đơn | Snapshot giá; giữ kho và lượt ưu đãi; tăng version |
-| PENDING | PAID | Payment service, mock SUCCESS | Payment SUCCEEDED; giữ kho chuyển CONSUMED; cộng điểm đúng một lần |
+| PENDING | PAID | Payment service, mock SUCCESS | Payment SUCCEEDED và giữ kho chuyển CONSUMED |
 | PENDING | PAYMENT_FAILED | Payment service, mock FAIL | Payment FAILED; trả kho/lượt ưu đãi; không cộng điểm |
 | PAYMENT_FAILED | PENDING | Payment service khi user thử lại với key mới | Giữ lại kho/lượt ưu đãi nguyên tử; không tính lại snapshot giá; ghi OrderEvent |
 | PENDING | CANCELLED | Chủ đơn qua cancel | Trả kho/lượt ưu đãi; chưa có điểm để hoàn |
 | PAYMENT_FAILED | CANCELLED | Chủ đơn qua cancel | Không trả kho/lượt ưu đãi lần hai |
-| PAID | CANCELLED | Chủ đơn qua cancel trước PREPARING | Mock refund Payment SUCCEEDED → REFUNDED; trả kho/lượt ưu đãi; đảo điểm EARN đúng một lần |
+| PAID | CANCELLED | Chủ đơn qua cancel trước PREPARING | Mock refund Payment SUCCEEDED → REFUNDED; trả kho/lượt ưu đãi, đảo điểm nếu đã có EARN |
 | PAID | PREPARING | STAFF | Chỉ đổi trạng thái và version |
 | PREPARING | READY | STAFF | Chỉ đổi trạng thái và version |
 | READY | COMPLETED | STAFF | Chỉ đổi trạng thái và version |
@@ -100,9 +100,9 @@ Theo đúng sơ đồ đề: mọi cạnh không có trong bảng đều bị `a
 
 ### Loyalty — TV4
 
-- Sau PAID cộng `floor(total/10000)` điểm, dựa trên số tiền sau giảm giá. Đơn total=0 được PAID qua mock với amount=0 và nhận 0 điểm; không được tạo payment tiền thật.
+- Sau COMPLETED, đơn có thanh toán chính hợp lệ cộng `floor(total/10000)` điểm dựa trên tiền sau giảm. Đơn 0đ nhận 0 điểm.
 - Chỉ cộng điểm trong transaction payment thành công. Ledger `(orderId, kind=EARN)` unique, ghi cả 0 điểm để ghi nhận xử lý. User.loyaltyPoints là số dư materialized, tăng cùng transaction.
-- Hủy PAID trước PREPARING ghi entry REVERSE = -EARN và trừ số dư cùng transaction mock refund; unique `(orderId, REVERSE)` chống đảo lặp. PAYMENT_FAILED không có EARN.
+- Hủy hợp lệ chỉ ghi REVERSE và trừ số dư nếu đã có EARN. Ràng buộc `(orderId, REVERSE)` chống đảo lặp. PAID chưa hoàn tất và PAYMENT_FAILED chưa có EARN.
 - Không có dùng điểm, mua bằng điểm hay endpoint trừ điểm tùy ý ở MVP. Không âm số dư. API chỉ trả số dư/ledger của chủ user.
 
 ## 7. Payment và Idempotency-Key — TV5 phối hợp TV3
@@ -122,12 +122,12 @@ Theo đúng sơ đồ đề: mọi cạnh không có trong bảng đều bị `a
 
 | Ca | Kỳ vọng |
 | --- | --- |
-| Cart: Cappuccino M=50000, topping Kem=10000, qty=2; SAVE10 | subtotal 120000, discount 12000, total 108000; PAID cộng 10 điểm |
+| Cart: Cappuccino M=50000, topping Kem=10000, qty=2; SAVE10 | subtotal 120000, discount 12000, total 108000, COMPLETED cộng 10 điểm |
 | Cùng dòng/topping đảo thứ tự | Cùng cart line và cùng fingerprint order canonical |
 | Client gửi total hoặc userId | 400 VALIDATION_ERROR; không tạo đơn |
 | Payment FAIL | PAYMENT_FAILED, reservation RELEASED, trả kho/promo một lần, giữ cart, 0 EARN |
 | Retry FAIL cùng key | Cùng response cũ; không tạo attempt hoặc trả kho thêm |
-| Retry payment key mới | Cùng orderId, giữ lại tài nguyên; thành công thành PAID và một EARN |
+| Retry payment key mới | Cùng orderId, giữ lại tài nguyên; thành công thành PAID, EARN sau khi COMPLETED |
 | 2 create cùng key | Cùng Order.id/code, một lần giữ kho/promo |
 | 2 payment cùng key | Một Payment, một EARN; trả cùng snapshot |
 | 2 payment khác key cùng order | Tối đa một thành công; còn lại conflict; không cộng điểm hai lần |
