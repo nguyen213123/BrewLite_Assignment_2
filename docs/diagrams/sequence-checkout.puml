@@ -8,7 +8,7 @@ participant "NestJS API" as API
 participant "Database\n(PostgreSQL)" as DB
 participant "Payment Service\n(Cổng thanh toán mô phỏng)" as PAY
 
-== Kiểm tra đăng nhập ==
+== Kiểm tra đăng nhập - UC-05 (khi chưa đăng nhập) ==
 activate KH
 KH -> UI : Bấm "Thanh toán" tại giỏ hàng
 activate UI
@@ -63,13 +63,13 @@ else Chưa đăng nhập hoặc JWT hết hạn
     end
 end
 
-== Hiển thị tổng tiền ==
+== Hiển thị tổng tiền - UC-06 ==
 UI -> UI : Tính tổng tiền từ giỏ hàng
 activate UI
 deactivate UI
 UI --> KH : Hiển thị tổng tiền và phương thức thanh toán (Ví / Thẻ)
 
-== Áp mã khuyến mãi ==
+== Áp mã khuyến mãi - UC-06.3 (khi có mã) ==
 opt Khách có mã khuyến mãi
     KH -> UI : Nhập mã khuyến mãi, bấm "Áp dụng"
     UI -> API : Gửi mã khuyến mãi (kèm JWT, giá trị đơn)
@@ -110,15 +110,19 @@ opt Khách có mã khuyến mãi
     end
 end
 
-== Tạo đơn hàng ==
+== Tạo đơn hàng - UC-06 ==
 KH -> UI : Chọn phương thức Ví/Thẻ, bấm "Xác nhận trả"
-UI -> UI : Sinh Idempotency-Key
+UI -> UI : Sinh Idempotency-Key tạo đơn
 activate UI
 deactivate UI
-UI -> API : POST /orders (giỏ hàng, mã khuyến mãi, JWT)
+UI -> API : POST /orders (giỏ hàng, mã khuyến mãi, Idempotency-Key, JWT)
 API -> API : Kiểm tra JWT hợp lệ
 activate API
 deactivate API
+break JWT hết hạn khi gửi yêu cầu đặt đơn
+    API --> UI : 401 Yêu cầu đăng nhập lại
+    UI --> KH : Chuyển sang đăng nhập (UC-05), giữ nguyên giỏ hàng
+end
 API -> DB : Kiểm tra sản phẩm tồn tại, size hợp lệ
 activate DB
 DB --> API : Thông tin và giá sản phẩm
@@ -132,8 +136,8 @@ break Giỏ hàng không hợp lệ (giỏ rỗng, số lượng sai, sản ph�
     UI --> KH : Báo lỗi, không tạo đơn
 end
 
-== Kiểm tra tồn kho ==
-API -> API : Nhận danh sách (sản phẩm, số lượng)
+== Kiểm tra và giữ kho nguyên liệu - UC-06.2 ==
+API -> API : Quy đổi từng dòng giỏ (món, size, topping) theo công thức thành nhu cầu nguyên liệu, gộp theo ingredientId (sắp xếp tăng dần)
 activate API
 deactivate API
 API -> DB : Mở transaction (BEGIN)
@@ -141,39 +145,39 @@ activate DB
 DB --> API : OK
 deactivate DB
 
-loop Với mỗi sản phẩm trong giỏ
-    API -> DB : Đọc số lượng tồn kho và version
+loop Với mỗi nguyên liệu cần dùng
+    API -> DB : Đọc Ingredient.stock và version
     activate DB
-    DB --> API : Tồn kho, version hiện tại
+    DB --> API : stock, version hiện tại
     deactivate DB
 end
 
-API -> API : Xác nhận tồn kho đủ so với số lượng đặt
+API -> API : Xác nhận stock nguyên liệu đủ so với nhu cầu
 activate API
 deactivate API
 
-break Không đủ hàng (ít nhất một sản phẩm thiếu)
-    API -> DB : ROLLBACK (không trừ kho sản phẩm nào)
+break Không đủ nguyên liệu (ít nhất một nguyên liệu thiếu)
+    API -> DB : ROLLBACK (không trừ kho nguyên liệu nào)
     activate DB
     DB --> API : Đã rollback
     deactivate DB
-    API --> UI : 409 Hết hàng + danh sách sản phẩm thiếu
+    API --> UI : 409 OUT_OF_STOCK + nguyên liệu/sản phẩm thiếu
     UI --> KH : Báo sản phẩm hết, giữ nguyên giỏ để điều chỉnh
 end
 
-loop Với mỗi sản phẩm
-    API -> DB : Trừ tồn kho có điều kiện theo version, tăng version
+loop Với mỗi nguyên liệu
+    API -> DB : Trừ stock có điều kiện (WHERE version và stock >= nhu cầu), tăng version
     activate DB
     DB --> API : Số dòng được cập nhật
     deactivate DB
 
     opt Xung đột đồng thời (version đã bị đơn khác đổi)
-        loop Đọc lại và thử lại, tối đa N lần
-            API -> DB : Đọc lại tồn kho và version
+        loop Đọc lại và thử lại, tối đa 3 lần
+            API -> DB : Đọc lại stock và version
             activate DB
-            DB --> API : Tồn kho, version mới
+            DB --> API : stock, version mới
             deactivate DB
-            API -> DB : Trừ tồn kho lại theo version mới
+            API -> DB : Trừ stock lại theo version mới
             activate DB
             DB --> API : Số dòng được cập nhật
             deactivate DB
@@ -181,12 +185,12 @@ loop Với mỗi sản phẩm
     end
 end
 
-break Vẫn xung đột sau N lần hoặc lỗi cơ sở dữ liệu
+break Vẫn xung đột sau 3 lần hoặc lỗi cơ sở dữ liệu
     API -> DB : ROLLBACK
     activate DB
     DB --> API : Đã rollback
     deactivate DB
-    API --> UI : Báo lỗi (xung đột / lỗi hệ thống)
+    API --> UI : 409 STOCK_CONFLICT (hoặc lỗi hệ thống)
     UI --> KH : Báo lỗi, giữ nguyên giỏ hàng
 end
 
@@ -194,127 +198,150 @@ API -> API : Báo kết quả "đủ hàng" (chưa commit)
 activate API
 deactivate API
 
-== Lưu đơn ==
-API -> DB : Lưu Order và OrderItem (PENDING), sinh mã đơn
+== Lưu đơn - UC-06 ==
+API -> DB : Lưu Order, OrderItem (PENDING), OrderIngredientHold (HELD) và tăng lượt dùng mã khuyến mãi (nếu có), sinh mã đơn
 activate DB
 DB --> API : Đã lưu, mã đơn
 deactivate DB
-API -> DB : COMMIT (lưu đơn và trừ kho cùng lúc)
+API -> DB : COMMIT (lưu đơn, giữ kho nguyên liệu cùng lúc)
 activate DB
 DB --> API : Đã commit
 deactivate DB
 API --> UI : 201 Mã đơn, trạng thái PENDING
 
-== Thanh toán qua cổng mô phỏng ==
+== Thanh toán qua cổng mô phỏng - UC-07 ==
+UI -> UI : Sinh Idempotency-Key thanh toán
+activate UI
+deactivate UI
 UI -> API : POST /payments (mã đơn, Ví/Thẻ, Idempotency-Key)
-API -> DB : Kiểm tra đơn đang PENDING và Idempotency-Key chưa dùng
+API -> DB : Tra Idempotency-Key, so khớp requestHash (mã đơn, phương thức)
 activate DB
-DB --> API : Trạng thái đơn, trạng thái key
+DB --> API : Bản ghi key (nếu có): trạng thái, requestHash, kết quả đã lưu
 deactivate DB
 
-alt Đơn không ở trạng thái PENDING (đã PAID, đã hủy, không hợp lệ)
-    API --> UI : 409 Từ chối thanh toán
-    UI --> KH : Thông báo trạng thái đơn không hợp lệ
+alt Key đã xử lý xong và cùng payload (replay, kiểm tra trước trạng thái đơn)
+    API --> UI : Trả lại đúng kết quả đã lưu (Idempotency-Replayed: true), kể cả khi đơn nay đã PAID
+    UI --> KH : Hiển thị kết quả của lần thanh toán trước
 
-else Trùng Idempotency-Key (client gửi lại yêu cầu)
-    API -> DB : Lấy kết quả của lần xử lý trước
+else Key đã dùng nhưng payload khác
+    API --> UI : 409 IDEMPOTENCY_KEY_REUSED
+    UI --> KH : Báo yêu cầu không hợp lệ
+
+else Key đang xử lý (IN_PROGRESS)
+    API --> UI : 409 IDEMPOTENCY_IN_PROGRESS (Retry-After: 1)
+    UI --> KH : Báo đang xử lý, gửi lại cùng key sau 1 giây
+
+else Key mới
+    API -> DB : Đọc trạng thái đơn và kiểm tra quyền sở hữu
     activate DB
-    DB --> API : Payment và trạng thái đơn cũ
+    DB --> API : Trạng thái đơn
     deactivate DB
-    API --> UI : Trả lại kết quả cũ (không thanh toán lần 2)
-    UI --> KH : Hiển thị kết quả giao dịch trước đó
 
-else Đơn PENDING và key chưa dùng
-    API -> PAY : Gửi yêu cầu thanh toán (số tiền, phương thức)
-    activate PAY
+    alt Đơn không ở PENDING hoặc PAYMENT_FAILED (đã PAID, đã hủy, không hợp lệ)
+        API --> UI : 409 INVALID_STATE_TRANSITION (hoặc ORDER_ALREADY_PAID)
+        UI --> KH : Thông báo trạng thái đơn không hợp lệ
 
-    alt Cổng thanh toán xử lý thành công
-        PAY --> API : Thanh toán thành công
-        deactivate PAY
-        API -> DB : Lưu Payment (đơn, key, số tiền, phương thức)
-        activate DB
-        DB --> API : Đã lưu
-        deactivate DB
-        API -> DB : Chuyển đơn PENDING sang PAID
-        activate DB
-        DB --> API : Đã cập nhật
-        deactivate DB
-
-        == Tích điểm thưởng ==
-        API -> API : Nhận thông báo đơn vừa chuyển PAID
-        activate API
-        deactivate API
-        API -> DB : Kiểm tra đơn chưa từng được cộng điểm
-        activate DB
-        DB --> API : Đã có giao dịch điểm của đơn hay chưa
-        deactivate DB
-
-        alt Đơn chưa PAID
-            API -> API : Không thực hiện, không cộng điểm
-            activate API
-            deactivate API
-
-        else Đơn đã được cộng điểm
-            API -> API : Bỏ qua để tránh cộng trùng
-            activate API
-            deactivate API
-
-        else Đơn PAID và chưa cộng điểm
-            API -> API : Tính điểm theo quy tắc tích điểm
-            activate API
-            deactivate API
-            API -> DB : Cộng điểm vào loyaltyPoints của khách
+    else Đơn PENDING hoặc PAYMENT_FAILED
+        opt Đơn PAYMENT_FAILED (thử lại bằng key mới trên cùng đơn)
+            API -> DB : prepareRetry: BEGIN, kiểm tra tồn kho và mã khuyến mãi
             activate DB
-            DB --> API : Đã cộng điểm
-            deactivate DB
-            API -> DB : Ghi LoyaltyTransaction gắn với đơn
-            activate DB
-            DB --> API : Đã ghi
+            DB --> API : Tồn kho, lượt dùng mã hiện tại
             deactivate DB
 
-            opt Lỗi khi cộng điểm
-                API -> API : Ghi log lỗi, đơn vẫn PAID, thử cộng lại sau
-                activate API
-                deactivate API
+            break Không đủ hàng hoặc mã hết lượt
+                API -> DB : ROLLBACK (đơn giữ nguyên PAYMENT_FAILED)
+                activate DB
+                DB --> API : Đã rollback
+                deactivate DB
+                API --> UI : 409 OUT_OF_STOCK (hoặc mã không còn hiệu lực)
+                UI --> KH : Báo lý do, giữ nguyên giỏ hàng và đơn
             end
-        end
 
-        == Kết quả thanh toán ==
-        API --> UI : 200 Thanh toán thành công (mã đơn, PAID)
-        UI -> UI : Xóa giỏ hàng
-        activate UI
-        deactivate UI
-        UI --> KH : Hiển thị xác nhận đơn hàng (mã đơn, trạng thái PAID)
-
-    else Thanh toán thất bại (số dư không đủ, thẻ bị từ chối, cổng trả lỗi) hoặc quá thời gian chờ
-        PAY --> API : Thất bại / quá thời gian chờ
-        deactivate PAY
-        API -> DB : Chuyển đơn sang PAYMENT_FAILED
-        activate DB
-        DB --> API : Đã cập nhật
-        deactivate DB
-        API --> UI : 402 Thanh toán thất bại
-        UI --> KH : Thông báo lỗi, giữ nguyên giỏ hàng
-
-        alt Khách chọn thử lại
-            KH -> UI : Chọn "Thử lại"
-            UI -> API : Yêu cầu thử lại (cùng Idempotency-Key)
-            API -> DB : Chuyển đơn PAYMENT_FAILED về PENDING
+            API -> DB : Giữ lại kho và mã khuyến mãi (RELEASED sang HELD), đơn PAYMENT_FAILED sang PENDING
             activate DB
             DB --> API : Đã cập nhật
             deactivate DB
-            API -> PAY : Gửi lại yêu cầu thanh toán (cùng Idempotency-Key)
-            activate PAY
-            PAY --> API : Kết quả giao dịch
-            deactivate PAY
-            API --> UI : Kết quả thanh toán lần thử lại
-            UI --> KH : Hiển thị kết quả
+            API -> DB : COMMIT
+            activate DB
+            DB --> API : Đã commit
+            deactivate DB
+        end
 
-        else Khách hủy đơn
-            KH -> UI : Chọn "Hủy đơn"
-            UI --> KH : Thông báo đã hủy đơn
+        API -> DB : Ghi Idempotency-Key (IN_PROGRESS)
+        activate DB
+        DB --> API : Đã ghi
+        deactivate DB
+        API -> PAY : Gửi yêu cầu thanh toán (số tiền lấy từ đơn, phương thức)
+        activate PAY
+
+        alt Cổng thanh toán xử lý thành công
+            PAY --> API : Thanh toán thành công
+            deactivate PAY
+            API -> DB : Lưu Payment (đơn, key, số tiền, phương thức)
+            activate DB
+            DB --> API : Đã lưu
+            deactivate DB
+            API -> DB : Chuyển đơn PENDING sang PAID (kho HELD sang CONSUMED)
+            activate DB
+            DB --> API : Đã cập nhật
+            deactivate DB
+
+            note over API : Không tích điểm ở bước này. Điểm (EARN) chỉ được cộng\nkhi nhân viên chuyển đơn sang COMPLETED (UC-11)
+
+            == Kết quả thanh toán ==
+            API -> DB : Lưu kết quả theo Idempotency-Key (COMPLETED)
+            activate DB
+            DB --> API : Đã lưu
+            deactivate DB
+            API --> UI : 200 order.status = PAID (mã đơn)
+            UI -> UI : Xóa giỏ hàng
+            activate UI
+            deactivate UI
+            UI --> KH : Hiển thị xác nhận đơn hàng (mã đơn, trạng thái PAID)
+
+        else Cổng xác nhận thất bại (số dư không đủ, thẻ bị từ chối, cổng trả lỗi) hoặc quá thời gian chờ
+            PAY --> API : Thất bại / quá thời gian chờ
+            deactivate PAY
+            API -> DB : Lưu Payment (FAILED), đơn sang PAYMENT_FAILED, nhả kho và mã khuyến mãi (RELEASED)
+            activate DB
+            DB --> API : Đã cập nhật
+            deactivate DB
+            API -> DB : Lưu kết quả theo Idempotency-Key (FAILED)
+            activate DB
+            DB --> API : Đã lưu
+            deactivate DB
+            API --> UI : 200 order.status = PAYMENT_FAILED (thanh toán thất bại)
+            UI --> KH : Thông báo lỗi, giữ nguyên giỏ hàng
+
+            alt Khách muốn thử lần mới (đã xác nhận FAIL)
+                KH -> UI : Chọn "Thử lại" (có thể đổi phương thức)
+                UI -> UI : Sinh Idempotency-Key mới
+                activate UI
+                deactivate UI
+                UI -> API : POST /payments (cùng mã đơn, Idempotency-Key mới)
+                note over API : Xử lý như nhánh "Key mới" với đơn PAYMENT_FAILED:\nprepareRetry kiểm tra và giữ lại kho trước, sau đó mới gọi cổng
+                API --> UI : Kết quả thanh toán lần thử mới
+                UI --> KH : Hiển thị kết quả
+
+            else Khách hủy đơn
+                KH -> UI : Chọn "Hủy đơn"
+                UI --> KH : Thông báo đã hủy đơn
+            end
         end
     end
+end
+
+opt Mất kết nối, UI chưa nhận được phản hồi (chưa rõ kết quả)
+    UI -> UI : Giữ nguyên Idempotency-Key và payload của lần gửi trước
+    activate UI
+    deactivate UI
+    UI -> API : Gửi lại POST /payments (cùng Idempotency-Key, cùng payload)
+    API -> DB : Tra Idempotency-Key, so khớp requestHash
+    activate DB
+    DB --> API : Kết quả đã lưu (hoặc đang xử lý)
+    deactivate DB
+    API --> UI : Trả lại kết quả đã lưu (Idempotency-Replayed: true), không trừ tiền lần 2
+    UI --> KH : Hiển thị kết quả giao dịch
 end
 
 deactivate API
