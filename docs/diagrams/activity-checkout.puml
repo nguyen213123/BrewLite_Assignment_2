@@ -257,20 +257,8 @@ repeat
       |Database (PostgreSQL)|
       :Lưu Payment (SUCCESS: đơn, key, số tiền, phương thức);
       :Chuyển đơn PENDING → PAID, reservationStatus HELD → CONSUMED;
-      :Kiểm tra đơn đã có giao dịch điểm chưa;
-      |NestJS API|
-      if (Đơn PAID và chưa cộng điểm?) then (Có)
-        :Tính điểm theo quy tắc tích điểm;
-        note right: Nhóm: Tích điểm thưởng
-        |Database (PostgreSQL)|
-        :Cộng điểm vào loyaltyPoints, ghi LoyaltyEntry (EARN) gắn với đơn;
-      else (Không: đã cộng điểm)
-        |NestJS API|
-        :Bỏ qua, không cộng điểm;
-      endif
-      |Database (PostgreSQL)|
       :Idempotency-Key → COMPLETED (lưu HTTP 200 + response);
-      :COMMIT (Payment, trạng thái đơn, kho, điểm và key cùng lúc);
+      :COMMIT (Payment, trạng thái đơn, kho và key cùng lúc);
       |NestJS API|
       :Trả 200 (payment.status = SUCCESS, order.status = PAID);
       note right: Nhóm: Kết quả thanh toán
