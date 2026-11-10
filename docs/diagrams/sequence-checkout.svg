@@ -1,0 +1,553 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1725" height="7475" viewBox="0 0 1725 7475" font-family="Verdana, 'DejaVu Sans', Arial, sans-serif" xmlns:c2pa="http://c2pa.org/manifest">
+<title>SEQUENCE DIAGRAM - ĐẶT VÀ THANH TOÁN ĐƠN HÀNG</title>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#181818"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="862.3" y="32" text-anchor="middle" font-size="18" font-weight="bold" fill="#000">SEQUENCE DIAGRAM - ĐẶT VÀ THANH TOÁN ĐƠN HÀNG</text>
+<line x1="81.8" y1="125" x2="81.8" y2="7345.0" stroke="#555" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="482.5" y1="125" x2="482.5" y2="7345.0" stroke="#555" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="934.4" y1="125" x2="934.4" y2="7345.0" stroke="#555" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="1388.4" y1="125" x2="1388.4" y2="7345.0" stroke="#555" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="1585.0" y1="125" x2="1585.0" y2="7345.0" stroke="#555" stroke-width="1" stroke-dasharray="5,5"/>
+<rect x="12.0" y="330.0" width="1700.6" height="919.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<line x1="12.0" y1="399.0" x2="1712.6" y2="399.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<rect x="12.0" y="1458.0" width="1700.6" height="868.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="12.0" y="2577.0" width="1700.6" height="102.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="12.0" y="2817.0" width="1700.6" height="102.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="12.0" y="3129.0" width="1700.6" height="102.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="12.0" y="3295.0" width="1700.6" height="176.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="12.0" y="3491.0" width="1700.6" height="361.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="12.0" y="3872.0" width="1700.6" height="176.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="12.0" y="4590.0" width="1700.6" height="2416.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<line x1="12.0" y1="4711.0" x2="1712.6" y2="4711.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<line x1="12.0" y1="4815.0" x2="1712.6" y2="4815.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<line x1="12.0" y1="4919.0" x2="1712.6" y2="4919.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<rect x="12.0" y="7026.0" width="1700.6" height="287.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="19.0" y="505.0" width="1686.6" height="730.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="19.0" y="1640.0" width="1686.6" height="672.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<line x1="19.0" y1="1746.0" x2="1705.6" y2="1746.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<line x1="19.0" y1="1850.0" x2="1705.6" y2="1850.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<rect x="19.0" y="3614.0" width="1686.6" height="224.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="19.0" y="5025.0" width="1686.6" height="1967.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<line x1="19.0" y1="5131.0" x2="1705.6" y2="5131.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<rect x="26.0" y="657.0" width="1672.6" height="564.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<line x1="26.0" y1="763.0" x2="1698.6" y2="763.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<rect x="26.0" y="1926.0" width="1672.6" height="372.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<line x1="26.0" y1="2032.0" x2="1698.6" y2="2032.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<rect x="26.0" y="3648.0" width="1672.6" height="176.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="26.0" y="5163.0" width="1672.6" height="461.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="26.0" y="5755.0" width="1672.6" height="1223.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<line x1="26.0" y1="6276.0" x2="1698.6" y2="6276.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<rect x="33.0" y="913.0" width="1658.6" height="294.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<line x1="33.0" y1="1019.0" x2="1691.6" y2="1019.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<rect x="33.0" y="2182.0" width="1658.6" height="102.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="33.0" y="5271.0" width="1658.6" height="176.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<rect x="33.0" y="6582.0" width="1658.6" height="382.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<line x1="33.0" y1="6864.0" x2="1691.6" y2="6864.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="8,4"/>
+<rect x="1383.4" y="802.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="1573.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="2706.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="3062.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="3170.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="3336.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="3547.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="3689.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="3763.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="3913.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="4188.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="4262.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="4523.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="4958.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="5204.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="5312.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="5489.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="5563.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="5651.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1580.0" y="5725.0" width="10" height="83.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="5833.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="5907.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="6093.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="6367.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="6441.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="1383.4" y="7163.0" width="10" height="49.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="929.4" y="256.0" width="10" height="7069.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="477.5" y="219.0" width="10" height="7106.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="76.8" y="204.0" width="10" height="7121.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="284.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="611.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="867.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="1049.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="482.5" y="1130.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="482.5" y="1321.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="1880.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="2062.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="482.5" y="2435.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="2531.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="2771.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="2991.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="3249.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="934.4" y="4066.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="482.5" y="4418.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="482.5" y="6195.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="482.5" y="6651.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<rect x="482.5" y="7058.0" width="10" height="28.0" fill="#E2E2F0" stroke="#181818" stroke-width="1"/>
+<line x1="86.8" y1="225.0" x2="477.5" y2="225.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="487.5" y1="262.0" x2="929.4" y2="262.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<polyline points="944.4,290.0 978.4,290.0 978.4,306.0 945.4,306.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="929.4" y1="377.0" x2="487.5" y2="377.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="444.0" x2="487.5" y2="444.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="481.0" x2="86.8" y2="481.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="86.8" y1="552.0" x2="477.5" y2="552.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="487.5" y1="589.0" x2="929.4" y2="589.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<polyline points="944.4,617.0 978.4,617.0 978.4,633.0 945.4,633.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="929.4" y1="704.0" x2="487.5" y2="704.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="741.0" x2="86.8" y2="741.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="808.0" x2="1383.4" y2="808.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="845.0" x2="939.4" y2="845.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="944.4,873.0 978.4,873.0 978.4,889.0 945.4,889.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="929.4" y1="960.0" x2="487.5" y2="960.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="997.0" x2="86.8" y2="997.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="944.4,1055.0 978.4,1055.0 978.4,1071.0 945.4,1071.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="929.4" y1="1108.0" x2="487.5" y2="1108.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="492.5,1136.0 526.5,1136.0 526.5,1152.0 493.5,1152.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="477.5" y1="1189.0" x2="86.8" y2="1189.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="492.5,1327.0 526.5,1327.0 526.5,1343.0 493.5,1343.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="477.5" y1="1380.0" x2="86.8" y2="1380.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="86.8" y1="1505.0" x2="477.5" y2="1505.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="487.5" y1="1542.0" x2="929.4" y2="1542.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="939.4" y1="1579.0" x2="1383.4" y2="1579.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="1616.0" x2="939.4" y2="1616.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="1687.0" x2="487.5" y2="1687.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="1724.0" x2="86.8" y2="1724.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="1791.0" x2="487.5" y2="1791.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="1828.0" x2="86.8" y2="1828.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="944.4,1886.0 978.4,1886.0 978.4,1902.0 945.4,1902.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="929.4" y1="1973.0" x2="487.5" y2="1973.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="2010.0" x2="86.8" y2="2010.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="944.4,2068.0 978.4,2068.0 978.4,2084.0 945.4,2084.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="929.4" y1="2121.0" x2="487.5" y2="2121.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="2158.0" x2="86.8" y2="2158.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="86.8" y1="2229.0" x2="477.5" y2="2229.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="477.5" y1="2266.0" x2="86.8" y2="2266.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="86.8" y1="2413.0" x2="477.5" y2="2413.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<polyline points="492.5,2441.0 526.5,2441.0 526.5,2457.0 493.5,2457.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="487.5" y1="2509.0" x2="929.4" y2="2509.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<polyline points="944.4,2537.0 978.4,2537.0 978.4,2553.0 945.4,2553.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="929.4" y1="2624.0" x2="487.5" y2="2624.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="2661.0" x2="86.8" y2="2661.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="2712.0" x2="1383.4" y2="2712.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="2749.0" x2="939.4" y2="2749.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="944.4,2777.0 978.4,2777.0 978.4,2793.0 945.4,2793.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="929.4" y1="2864.0" x2="487.5" y2="2864.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="2901.0" x2="86.8" y2="2901.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="944.4,2997.0 978.4,2997.0 978.4,3013.0 945.4,3013.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="939.4" y1="3068.0" x2="1383.4" y2="3068.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="3105.0" x2="939.4" y2="3105.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="3176.0" x2="1383.4" y2="3176.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="3213.0" x2="939.4" y2="3213.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="944.4,3255.0 978.4,3255.0 978.4,3271.0 945.4,3271.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="939.4" y1="3342.0" x2="1383.4" y2="3342.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="3379.0" x2="939.4" y2="3379.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="3416.0" x2="487.5" y2="3416.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="3453.0" x2="86.8" y2="3453.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="3553.0" x2="1383.4" y2="3553.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="3590.0" x2="939.4" y2="3590.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="3695.0" x2="1383.4" y2="3695.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="3732.0" x2="939.4" y2="3732.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="3769.0" x2="1383.4" y2="3769.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="3806.0" x2="939.4" y2="3806.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="3919.0" x2="1383.4" y2="3919.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="3956.0" x2="939.4" y2="3956.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="3993.0" x2="487.5" y2="3993.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="4030.0" x2="86.8" y2="4030.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="944.4,4072.0 978.4,4072.0 978.4,4088.0 945.4,4088.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="939.4" y1="4194.0" x2="1383.4" y2="4194.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="4231.0" x2="939.4" y2="4231.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="4268.0" x2="1383.4" y2="4268.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="4305.0" x2="939.4" y2="4305.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="4342.0" x2="487.5" y2="4342.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="492.5,4424.0 526.5,4424.0 526.5,4440.0 493.5,4440.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="487.5" y1="4477.0" x2="929.4" y2="4477.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="939.4" y1="4529.0" x2="1383.4" y2="4529.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="4566.0" x2="939.4" y2="4566.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="4652.0" x2="487.5" y2="4652.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="4689.0" x2="86.8" y2="4689.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="4756.0" x2="487.5" y2="4756.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="4793.0" x2="86.8" y2="4793.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="4860.0" x2="487.5" y2="4860.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="4897.0" x2="86.8" y2="4897.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="4964.0" x2="1383.4" y2="4964.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="5001.0" x2="939.4" y2="5001.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="5072.0" x2="487.5" y2="5072.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="5109.0" x2="86.8" y2="5109.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="5210.0" x2="1383.4" y2="5210.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="5247.0" x2="939.4" y2="5247.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="5318.0" x2="1383.4" y2="5318.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="5355.0" x2="939.4" y2="5355.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="5392.0" x2="487.5" y2="5392.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="5429.0" x2="86.8" y2="5429.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="5495.0" x2="1383.4" y2="5495.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="5532.0" x2="939.4" y2="5532.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="5569.0" x2="1383.4" y2="5569.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="5606.0" x2="939.4" y2="5606.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="5657.0" x2="1383.4" y2="5657.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="5694.0" x2="939.4" y2="5694.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="5731.0" x2="1580.0" y2="5731.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1580.0" y1="5802.0" x2="939.4" y2="5802.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="5839.0" x2="1383.4" y2="5839.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="5876.0" x2="939.4" y2="5876.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="5913.0" x2="1383.4" y2="5913.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="5950.0" x2="939.4" y2="5950.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="6099.0" x2="1383.4" y2="6099.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="6136.0" x2="939.4" y2="6136.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="6173.0" x2="487.5" y2="6173.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="492.5,6201.0 526.5,6201.0 526.5,6217.0 493.5,6217.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="477.5" y1="6254.0" x2="86.8" y2="6254.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="1585.0" y1="6321.0" x2="939.4" y2="6321.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="6373.0" x2="1383.4" y2="6373.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="6410.0" x2="939.4" y2="6410.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="939.4" y1="6447.0" x2="1383.4" y2="6447.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="6484.0" x2="939.4" y2="6484.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="6521.0" x2="487.5" y2="6521.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="6558.0" x2="86.8" y2="6558.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="86.8" y1="6629.0" x2="477.5" y2="6629.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<polyline points="492.5,6657.0 526.5,6657.0 526.5,6673.0 493.5,6673.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="487.5" y1="6710.0" x2="929.4" y2="6710.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="929.4" y1="6805.0" x2="487.5" y2="6805.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="6842.0" x2="86.8" y2="6842.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="86.8" y1="6909.0" x2="477.5" y2="6909.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="477.5" y1="6946.0" x2="86.8" y2="6946.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<polyline points="492.5,7064.0 526.5,7064.0 526.5,7080.0 493.5,7080.0" fill="none" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="487.5" y1="7132.0" x2="929.4" y2="7132.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="939.4" y1="7169.0" x2="1383.4" y2="7169.0" stroke="#181818" stroke-width="1.2" marker-end="url(#ah)"/>
+<line x1="1383.4" y1="7206.0" x2="939.4" y2="7206.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="929.4" y1="7258.0" x2="487.5" y2="7258.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<line x1="477.5" y1="7295.0" x2="86.8" y2="7295.0" stroke="#181818" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+<text x="183.0" y="216.0" font-size="12" fill="#000"><tspan font-weight="bold">1</tspan><tspan dx="5">Bấm "Thanh toán" tại giỏ hàng</tspan></text>
+<text x="642.4" y="253.0" font-size="12" fill="#000"><tspan font-weight="bold">2</tspan><tspan dx="5">Gửi JWT để kiểm tra</tspan></text>
+<text x="978.4" y="294.0" font-size="12" fill="#000"><tspan font-weight="bold">3</tspan><tspan dx="5">Kiểm tra JWT</tspan></text>
+<text x="670.4" y="368.0" font-size="12" fill="#000"><tspan font-weight="bold">4</tspan><tspan dx="5">JWT hợp lệ</tspan></text>
+<text x="631.8" y="435.0" font-size="12" fill="#000"><tspan font-weight="bold">5</tspan><tspan dx="5">401 Yêu cầu đăng nhập</tspan></text>
+<text x="188.3" y="472.0" font-size="12" fill="#000"><tspan font-weight="bold">6</tspan><tspan dx="5">Hiển thị màn hình đăng nhập</tspan></text>
+<text x="151.8" y="543.0" font-size="12" fill="#000"><tspan font-weight="bold">7</tspan><tspan dx="5">Nhập email, mật khẩu, bấm "Đăng nhập"</tspan></text>
+<text x="596.7" y="580.0" font-size="12" fill="#000"><tspan font-weight="bold">8</tspan><tspan dx="5">POST /auth/login (email, mật khẩu)</tspan></text>
+<text x="978.4" y="621.0" font-size="12" fill="#000"><tspan font-weight="bold">9</tspan><tspan dx="5">Validate định dạng dữ liệu</tspan></text>
+<text x="638.5" y="695.0" font-size="12" fill="#000"><tspan font-weight="bold">10</tspan><tspan dx="5">400 Lỗi từng trường</tspan></text>
+<text x="187.3" y="732.0" font-size="12" fill="#000"><tspan font-weight="bold">11</tspan><tspan dx="5">Báo lỗi tại trường tương ứng</tspan></text>
+<text x="1076.0" y="799.0" font-size="12" fill="#000"><tspan font-weight="bold">12</tspan><tspan dx="5">Tìm tài khoản theo email</tspan></text>
+<text x="1062.6" y="836.0" font-size="12" fill="#000"><tspan font-weight="bold">13</tspan><tspan dx="5">Tài khoản (mật khẩu đã băm)</tspan></text>
+<text x="978.4" y="877.0" font-size="12" fill="#000"><tspan font-weight="bold">14</tspan><tspan dx="5">So sánh mật khẩu với hash (bcrypt)</tspan></text>
+<text x="612.4" y="951.0" font-size="12" fill="#000"><tspan font-weight="bold">15</tspan><tspan dx="5">401 Sai thông tin đăng nhập</tspan></text>
+<text x="151.8" y="988.0" font-size="12" fill="#000"><tspan font-weight="bold">16</tspan><tspan dx="5">Báo "Email hoặc mật khẩu không đúng"</tspan></text>
+<text x="978.4" y="1059.0" font-size="12" fill="#000"><tspan font-weight="bold">17</tspan><tspan dx="5">Phát JWT</tspan></text>
+<text x="673.3" y="1099.0" font-size="12" fill="#000"><tspan font-weight="bold">18</tspan><tspan dx="5">200 JWT</tspan></text>
+<text x="526.5" y="1140.0" font-size="12" fill="#000"><tspan font-weight="bold">19</tspan><tspan dx="5">Lưu token</tspan></text>
+<text x="128.7" y="1180.0" font-size="12" fill="#000"><tspan font-weight="bold">20</tspan><tspan dx="5">Chuyển về màn hình giỏ hàng (giỏ còn nguyên)</tspan></text>
+<text x="526.5" y="1331.0" font-size="12" fill="#000"><tspan font-weight="bold">21</tspan><tspan dx="5">Tính tổng tiền từ giỏ hàng</tspan></text>
+<text x="106.3" y="1371.0" font-size="12" fill="#000"><tspan font-weight="bold">22</tspan><tspan dx="5">Hiển thị tổng tiền và phương thức thanh toán (Ví / Thẻ)</tspan></text>
+<text x="157.8" y="1496.0" font-size="12" fill="#000"><tspan font-weight="bold">23</tspan><tspan dx="5">Nhập mã khuyến mãi, bấm "Áp dụng"</tspan></text>
+<text x="572.1" y="1533.0" font-size="12" fill="#000"><tspan font-weight="bold">24</tspan><tspan dx="5">Gửi mã khuyến mãi (kèm JWT, giá trị đơn)</tspan></text>
+<text x="1045.3" y="1570.0" font-size="12" fill="#000"><tspan font-weight="bold">25</tspan><tspan dx="5">Kiểm tra mã tồn tại và còn hiệu lực</tspan></text>
+<text x="1047.4" y="1607.0" font-size="12" fill="#000"><tspan font-weight="bold">26</tspan><tspan dx="5">Thông tin mã (thời hạn, lượt dùng)</tspan></text>
+<text x="648.3" y="1678.0" font-size="12" fill="#000"><tspan font-weight="bold">27</tspan><tspan dx="5">Mã không hợp lệ</tspan></text>
+<text x="152.7" y="1715.0" font-size="12" fill="#000"><tspan font-weight="bold">28</tspan><tspan dx="5">Báo "Mã không hợp lệ", không giảm giá</tspan></text>
+<text x="635.2" y="1782.0" font-size="12" fill="#000"><tspan font-weight="bold">29</tspan><tspan dx="5">Mã hết hạn / hết lượt</tspan></text>
+<text x="193.4" y="1819.0" font-size="12" fill="#000"><tspan font-weight="bold">30</tspan><tspan dx="5">Báo lý do, không giảm giá</tspan></text>
+<text x="978.4" y="1890.0" font-size="12" fill="#000"><tspan font-weight="bold">31</tspan><tspan dx="5">Kiểm tra đơn đủ điều kiện (giá trị tối thiểu)</tspan></text>
+<text x="617.1" y="1964.0" font-size="12" fill="#000"><tspan font-weight="bold">32</tspan><tspan dx="5">Chưa đủ điều kiện áp dụng</tspan></text>
+<text x="156.1" y="2001.0" font-size="12" fill="#000"><tspan font-weight="bold">33</tspan><tspan dx="5">Báo điều kiện cần đạt, không giảm giá</tspan></text>
+<text x="978.4" y="2072.0" font-size="12" fill="#000"><tspan font-weight="bold">34</tspan><tspan dx="5">Tính số tiền giảm và tổng tiền mới</tspan></text>
+<text x="640.2" y="2112.0" font-size="12" fill="#000"><tspan font-weight="bold">35</tspan><tspan dx="5">Tổng tiền sau giảm</tspan></text>
+<text x="137.4" y="2149.0" font-size="12" fill="#000"><tspan font-weight="bold">36</tspan><tspan dx="5">Hiển thị tổng tiền sau giảm, gắn mã vào đơn</tspan></text>
+<text x="211.7" y="2220.0" font-size="12" fill="#000"><tspan font-weight="bold">37</tspan><tspan dx="5">Xóa mã khuyến mãi</tspan></text>
+<text x="186.7" y="2257.0" font-size="12" fill="#000"><tspan font-weight="bold">38</tspan><tspan dx="5">Khôi phục tổng tiền ban đầu</tspan></text>
+<text x="132.6" y="2404.0" font-size="12" fill="#000"><tspan font-weight="bold">39</tspan><tspan dx="5">Chọn phương thức Ví/Thẻ, bấm "Xác nhận trả"</tspan></text>
+<text x="526.5" y="2445.0" font-size="12" fill="#000"><tspan font-weight="bold">40</tspan><tspan dx="5">Sinh Idempotency-Key tạo đơn</tspan></text>
+<text x="520.4" y="2485.0" font-size="12" fill="#000"><tspan font-weight="bold">41</tspan><tspan dx="5">POST /orders (giỏ hàng, mã khuyến mãi, Idempotency-Key,</tspan></text>
+<text x="708.5" y="2500.0" text-anchor="middle" font-size="12" fill="#000">JWT)</text>
+<text x="978.4" y="2541.0" font-size="12" fill="#000"><tspan font-weight="bold">42</tspan><tspan dx="5">Kiểm tra JWT hợp lệ</tspan></text>
+<text x="618.7" y="2615.0" font-size="12" fill="#000"><tspan font-weight="bold">43</tspan><tspan dx="5">401 Yêu cầu đăng nhập lại</tspan></text>
+<text x="108.1" y="2652.0" font-size="12" fill="#000"><tspan font-weight="bold">44</tspan><tspan dx="5">Chuyển sang đăng nhập (UC-05), giữ nguyên giỏ hàng</tspan></text>
+<text x="1036.6" y="2703.0" font-size="12" fill="#000"><tspan font-weight="bold">45</tspan><tspan dx="5">Kiểm tra sản phẩm tồn tại, size hợp lệ</tspan></text>
+<text x="1070.7" y="2740.0" font-size="12" fill="#000"><tspan font-weight="bold">46</tspan><tspan dx="5">Thông tin và giá sản phẩm</tspan></text>
+<text x="978.4" y="2781.0" font-size="12" fill="#000"><tspan font-weight="bold">47</tspan><tspan dx="5">Validate số lượng &gt; 0, tính lại tổng tiền ở server</tspan></text>
+<text x="594.5" y="2855.0" font-size="12" fill="#000"><tspan font-weight="bold">48</tspan><tspan dx="5">400 Dữ liệu giỏ hàng không hợp lệ</tspan></text>
+<text x="204.2" y="2892.0" font-size="12" fill="#000"><tspan font-weight="bold">49</tspan><tspan dx="5">Báo lỗi, không tạo đơn</tspan></text>
+<text x="978.4" y="3001.0" font-size="12" fill="#000"><tspan font-weight="bold">50</tspan><tspan dx="5">Quy đổi từng dòng giỏ (món, size, topping) theo công thức</tspan></text>
+<text x="978.4" y="3016.0" font-size="12" fill="#000">thành nhu cầu nguyên liệu, gộp theo ingredientId (sắp xếp</text>
+<text x="978.4" y="3031.0" font-size="12" fill="#000">tăng dần)</text>
+<text x="1080.9" y="3059.0" font-size="12" fill="#000"><tspan font-weight="bold">51</tspan><tspan dx="5">Mở transaction (BEGIN)</tspan></text>
+<text x="1142.3" y="3096.0" font-size="12" fill="#000"><tspan font-weight="bold">52</tspan><tspan dx="5">OK</tspan></text>
+<text x="1055.9" y="3167.0" font-size="12" fill="#000"><tspan font-weight="bold">53</tspan><tspan dx="5">Đọc Ingredient.stock và version</tspan></text>
+<text x="1084.8" y="3204.0" font-size="12" fill="#000"><tspan font-weight="bold">54</tspan><tspan dx="5">stock, version hiện tại</tspan></text>
+<text x="978.4" y="3259.0" font-size="12" fill="#000"><tspan font-weight="bold">55</tspan><tspan dx="5">Xác nhận stock nguyên liệu đủ so với nhu cầu</tspan></text>
+<text x="1020.5" y="3333.0" font-size="12" fill="#000"><tspan font-weight="bold">56</tspan><tspan dx="5">ROLLBACK (không trừ kho nguyên liệu nào)</tspan></text>
+<text x="1117.1" y="3370.0" font-size="12" fill="#000"><tspan font-weight="bold">57</tspan><tspan dx="5">Đã rollback</tspan></text>
+<text x="544.5" y="3407.0" font-size="12" fill="#000"><tspan font-weight="bold">58</tspan><tspan dx="5">409 OUT_OF_STOCK + nguyên liệu/sản phẩm thiếu</tspan></text>
+<text x="125.9" y="3444.0" font-size="12" fill="#000"><tspan font-weight="bold">59</tspan><tspan dx="5">Báo sản phẩm hết, giữ nguyên giỏ để điều chỉnh</tspan></text>
+<text x="966.3" y="3529.0" font-size="12" fill="#000"><tspan font-weight="bold">60</tspan><tspan dx="5">Trừ stock có điều kiện (WHERE version và stock &gt;= nhu cầu),</tspan></text>
+<text x="1161.4" y="3544.0" text-anchor="middle" font-size="12" fill="#000">tăng version</text>
+<text x="1081.8" y="3581.0" font-size="12" fill="#000"><tspan font-weight="bold">61</tspan><tspan dx="5">Số dòng được cập nhật</tspan></text>
+<text x="1079.6" y="3686.0" font-size="12" fill="#000"><tspan font-weight="bold">62</tspan><tspan dx="5">Đọc lại stock và version</tspan></text>
+<text x="1096.2" y="3723.0" font-size="12" fill="#000"><tspan font-weight="bold">63</tspan><tspan dx="5">stock, version mới</tspan></text>
+<text x="1062.8" y="3760.0" font-size="12" fill="#000"><tspan font-weight="bold">64</tspan><tspan dx="5">Trừ stock lại theo version mới</tspan></text>
+<text x="1081.8" y="3797.0" font-size="12" fill="#000"><tspan font-weight="bold">65</tspan><tspan dx="5">Số dòng được cập nhật</tspan></text>
+<text x="1119.2" y="3910.0" font-size="12" fill="#000"><tspan font-weight="bold">66</tspan><tspan dx="5">ROLLBACK</tspan></text>
+<text x="1117.1" y="3947.0" font-size="12" fill="#000"><tspan font-weight="bold">67</tspan><tspan dx="5">Đã rollback</tspan></text>
+<text x="572.8" y="3984.0" font-size="12" fill="#000"><tspan font-weight="bold">68</tspan><tspan dx="5">409 STOCK_CONFLICT (hoặc lỗi hệ thống)</tspan></text>
+<text x="185.8" y="4021.0" font-size="12" fill="#000"><tspan font-weight="bold">69</tspan><tspan dx="5">Báo lỗi, giữ nguyên giỏ hàng</tspan></text>
+<text x="978.4" y="4076.0" font-size="12" fill="#000"><tspan font-weight="bold">70</tspan><tspan dx="5">Báo kết quả "đủ hàng" (chưa commit)</tspan></text>
+<text x="964.4" y="4170.0" font-size="12" fill="#000"><tspan font-weight="bold">71</tspan><tspan dx="5">Lưu Order, OrderItem (PENDING), OrderIngredientHold (HELD)</tspan></text>
+<text x="1161.4" y="4185.0" text-anchor="middle" font-size="12" fill="#000">và tăng lượt dùng mã khuyến mãi (nếu có), sinh mã đơn</text>
+<text x="1104.9" y="4222.0" font-size="12" fill="#000"><tspan font-weight="bold">72</tspan><tspan dx="5">Đã lưu, mã đơn</tspan></text>
+<text x="1006.9" y="4259.0" font-size="12" fill="#000"><tspan font-weight="bold">73</tspan><tspan dx="5">COMMIT (lưu đơn, giữ kho nguyên liệu cùng lúc)</tspan></text>
+<text x="1118.1" y="4296.0" font-size="12" fill="#000"><tspan font-weight="bold">74</tspan><tspan dx="5">Đã commit</tspan></text>
+<text x="600.0" y="4333.0" font-size="12" fill="#000"><tspan font-weight="bold">75</tspan><tspan dx="5">201 Mã đơn, trạng thái PENDING</tspan></text>
+<text x="526.5" y="4428.0" font-size="12" fill="#000"><tspan font-weight="bold">76</tspan><tspan dx="5">Sinh Idempotency-Key thanh toán</tspan></text>
+<text x="540.3" y="4468.0" font-size="12" fill="#000"><tspan font-weight="bold">77</tspan><tspan dx="5">POST /payments (mã đơn, Ví/Thẻ, Idempotency-Key)</tspan></text>
+<text x="967.3" y="4505.0" font-size="12" fill="#000"><tspan font-weight="bold">78</tspan><tspan dx="5">Tra Idempotency-Key, so khớp requestHash (mã đơn, phương</tspan></text>
+<text x="1161.4" y="4520.0" text-anchor="middle" font-size="12" fill="#000">thức)</text>
+<text x="966.7" y="4557.0" font-size="12" fill="#000"><tspan font-weight="bold">79</tspan><tspan dx="5">Bản ghi key (nếu có): trạng thái, requestHash, kết quả đã lưu</tspan></text>
+<text x="514.9" y="4628.0" font-size="12" fill="#000"><tspan font-weight="bold">80</tspan><tspan dx="5">Trả lại đúng kết quả đã lưu (Idempotency-Replayed: true), kể</tspan></text>
+<text x="708.5" y="4643.0" text-anchor="middle" font-size="12" fill="#000">cả khi đơn nay đã PAID</text>
+<text x="147.7" y="4680.0" font-size="12" fill="#000"><tspan font-weight="bold">81</tspan><tspan dx="5">Hiển thị kết quả của lần thanh toán trước</tspan></text>
+<text x="599.3" y="4747.0" font-size="12" fill="#000"><tspan font-weight="bold">82</tspan><tspan dx="5">409 IDEMPOTENCY_KEY_REUSED</tspan></text>
+<text x="193.7" y="4784.0" font-size="12" fill="#000"><tspan font-weight="bold">83</tspan><tspan dx="5">Báo yêu cầu không hợp lệ</tspan></text>
+<text x="549.8" y="4851.0" font-size="12" fill="#000"><tspan font-weight="bold">84</tspan><tspan dx="5">409 IDEMPOTENCY_IN_PROGRESS (Retry-After: 1)</tspan></text>
+<text x="143.0" y="4888.0" font-size="12" fill="#000"><tspan font-weight="bold">85</tspan><tspan dx="5">Báo đang xử lý, gửi lại cùng key sau 1 giây</tspan></text>
+<text x="1016.0" y="4955.0" font-size="12" fill="#000"><tspan font-weight="bold">86</tspan><tspan dx="5">Đọc trạng thái đơn và kiểm tra quyền sở hữu</tspan></text>
+<text x="1107.8" y="4992.0" font-size="12" fill="#000"><tspan font-weight="bold">87</tspan><tspan dx="5">Trạng thái đơn</tspan></text>
+<text x="508.7" y="5063.0" font-size="12" fill="#000"><tspan font-weight="bold">88</tspan><tspan dx="5">409 INVALID_STATE_TRANSITION (hoặc ORDER_ALREADY_PAID)</tspan></text>
+<text x="154.4" y="5100.0" font-size="12" fill="#000"><tspan font-weight="bold">89</tspan><tspan dx="5">Thông báo trạng thái đơn không hợp lệ</tspan></text>
+<text x="978.2" y="5201.0" font-size="12" fill="#000"><tspan font-weight="bold">90</tspan><tspan dx="5">prepareRetry: BEGIN, kiểm tra tồn kho và mã khuyến mãi</tspan></text>
+<text x="1058.6" y="5238.0" font-size="12" fill="#000"><tspan font-weight="bold">91</tspan><tspan dx="5">Tồn kho, lượt dùng mã hiện tại</tspan></text>
+<text x="1012.6" y="5309.0" font-size="12" fill="#000"><tspan font-weight="bold">92</tspan><tspan dx="5">ROLLBACK (đơn giữ nguyên PAYMENT_FAILED)</tspan></text>
+<text x="1117.1" y="5346.0" font-size="12" fill="#000"><tspan font-weight="bold">93</tspan><tspan dx="5">Đã rollback</tspan></text>
+<text x="546.2" y="5383.0" font-size="12" fill="#000"><tspan font-weight="bold">94</tspan><tspan dx="5">409 OUT_OF_STOCK (hoặc mã không còn hiệu lực)</tspan></text>
+<text x="155.9" y="5420.0" font-size="12" fill="#000"><tspan font-weight="bold">95</tspan><tspan dx="5">Báo lý do, giữ nguyên giỏ hàng và đơn</tspan></text>
+<text x="973.8" y="5471.0" font-size="12" fill="#000"><tspan font-weight="bold">96</tspan><tspan dx="5">Giữ lại kho và mã khuyến mãi (RELEASED sang HELD), đơn</tspan></text>
+<text x="1161.4" y="5486.0" text-anchor="middle" font-size="12" fill="#000">PAYMENT_FAILED sang PENDING</text>
+<text x="1114.4" y="5523.0" font-size="12" fill="#000"><tspan font-weight="bold">97</tspan><tspan dx="5">Đã cập nhật</tspan></text>
+<text x="1126.3" y="5560.0" font-size="12" fill="#000"><tspan font-weight="bold">98</tspan><tspan dx="5">COMMIT</tspan></text>
+<text x="1118.1" y="5597.0" font-size="12" fill="#000"><tspan font-weight="bold">99</tspan><tspan dx="5">Đã commit</tspan></text>
+<text x="1034.0" y="5648.0" font-size="12" fill="#000"><tspan font-weight="bold">100</tspan><tspan dx="5">Ghi Idempotency-Key (IN_PROGRESS)</tspan></text>
+<text x="1127.3" y="5685.0" font-size="12" fill="#000"><tspan font-weight="bold">101</tspan><tspan dx="5">Đã ghi</tspan></text>
+<text x="1074.1" y="5722.0" font-size="12" fill="#000"><tspan font-weight="bold">102</tspan><tspan dx="5">Gửi yêu cầu thanh toán (số tiền lấy từ đơn, phương thức)</tspan></text>
+<text x="1175.1" y="5793.0" font-size="12" fill="#000"><tspan font-weight="bold">103</tspan><tspan dx="5">Thanh toán thành công</tspan></text>
+<text x="1009.8" y="5830.0" font-size="12" fill="#000"><tspan font-weight="bold">104</tspan><tspan dx="5">Lưu Payment (đơn, key, số tiền, phương thức)</tspan></text>
+<text x="1127.3" y="5867.0" font-size="12" fill="#000"><tspan font-weight="bold">105</tspan><tspan dx="5">Đã lưu</tspan></text>
+<text x="960.4" y="5904.0" font-size="12" fill="#000"><tspan font-weight="bold">106</tspan><tspan dx="5">Chuyển đơn PENDING sang PAID (kho HELD sang CONSUMED)</tspan></text>
+<text x="1110.2" y="5941.0" font-size="12" fill="#000"><tspan font-weight="bold">107</tspan><tspan dx="5">Đã cập nhật</tspan></text>
+<text x="998.2" y="6090.0" font-size="12" fill="#000"><tspan font-weight="bold">108</tspan><tspan dx="5">Lưu kết quả theo Idempotency-Key (COMPLETED)</tspan></text>
+<text x="1127.3" y="6127.0" font-size="12" fill="#000"><tspan font-weight="bold">109</tspan><tspan dx="5">Đã lưu</tspan></text>
+<text x="592.8" y="6164.0" font-size="12" fill="#000"><tspan font-weight="bold">110</tspan><tspan dx="5">200 order.status = PAID (mã đơn)</tspan></text>
+<text x="526.5" y="6205.0" font-size="12" fill="#000"><tspan font-weight="bold">111</tspan><tspan dx="5">Xóa giỏ hàng</tspan></text>
+<text x="106.3" y="6245.0" font-size="12" fill="#000"><tspan font-weight="bold">112</tspan><tspan dx="5">Hiển thị xác nhận đơn hàng (mã đơn, trạng thái PAID)</tspan></text>
+<text x="1162.5" y="6312.0" font-size="12" fill="#000"><tspan font-weight="bold">113</tspan><tspan dx="5">Thất bại / quá thời gian chờ</tspan></text>
+<text x="959.0" y="6349.0" font-size="12" fill="#000"><tspan font-weight="bold">114</tspan><tspan dx="5">Lưu Payment (FAILED), đơn sang PAYMENT_FAILED, nhả kho và</tspan></text>
+<text x="1161.4" y="6364.0" text-anchor="middle" font-size="12" fill="#000">mã khuyến mãi (RELEASED)</text>
+<text x="1110.2" y="6401.0" font-size="12" fill="#000"><tspan font-weight="bold">115</tspan><tspan dx="5">Đã cập nhật</tspan></text>
+<text x="1014.6" y="6438.0" font-size="12" fill="#000"><tspan font-weight="bold">116</tspan><tspan dx="5">Lưu kết quả theo Idempotency-Key (FAILED)</tspan></text>
+<text x="1127.3" y="6475.0" font-size="12" fill="#000"><tspan font-weight="bold">117</tspan><tspan dx="5">Đã lưu</tspan></text>
+<text x="520.1" y="6512.0" font-size="12" fill="#000"><tspan font-weight="bold">118</tspan><tspan dx="5">200 order.status = PAYMENT_FAILED (thanh toán thất bại)</tspan></text>
+<text x="161.3" y="6549.0" font-size="12" fill="#000"><tspan font-weight="bold">119</tspan><tspan dx="5">Thông báo lỗi, giữ nguyên giỏ hàng</tspan></text>
+<text x="148.3" y="6620.0" font-size="12" fill="#000"><tspan font-weight="bold">120</tspan><tspan dx="5">Chọn "Thử lại" (có thể đổi phương thức)</tspan></text>
+<text x="526.5" y="6661.0" font-size="12" fill="#000"><tspan font-weight="bold">121</tspan><tspan dx="5">Sinh Idempotency-Key mới</tspan></text>
+<text x="529.2" y="6701.0" font-size="12" fill="#000"><tspan font-weight="bold">122</tspan><tspan dx="5">POST /payments (cùng mã đơn, Idempotency-Key mới)</tspan></text>
+<text x="599.9" y="6796.0" font-size="12" fill="#000"><tspan font-weight="bold">123</tspan><tspan dx="5">Kết quả thanh toán lần thử mới</tspan></text>
+<text x="219.5" y="6833.0" font-size="12" fill="#000"><tspan font-weight="bold">124</tspan><tspan dx="5">Hiển thị kết quả</tspan></text>
+<text x="219.6" y="6900.0" font-size="12" fill="#000"><tspan font-weight="bold">125</tspan><tspan dx="5">Chọn "Hủy đơn"</tspan></text>
+<text x="200.1" y="6937.0" font-size="12" fill="#000"><tspan font-weight="bold">126</tspan><tspan dx="5">Thông báo đã hủy đơn</tspan></text>
+<text x="526.5" y="7068.0" font-size="12" fill="#000"><tspan font-weight="bold">127</tspan><tspan dx="5">Giữ nguyên Idempotency-Key và payload của lần gửi trước</tspan></text>
+<text x="531.7" y="7108.0" font-size="12" fill="#000"><tspan font-weight="bold">128</tspan><tspan dx="5">Gửi lại POST /payments (cùng Idempotency-Key, cùng</tspan></text>
+<text x="708.5" y="7123.0" text-anchor="middle" font-size="12" fill="#000">payload)</text>
+<text x="1016.6" y="7160.0" font-size="12" fill="#000"><tspan font-weight="bold">129</tspan><tspan dx="5">Tra Idempotency-Key, so khớp requestHash</tspan></text>
+<text x="1048.6" y="7197.0" font-size="12" fill="#000"><tspan font-weight="bold">130</tspan><tspan dx="5">Kết quả đã lưu (hoặc đang xử lý)</tspan></text>
+<text x="505.9" y="7234.0" font-size="12" fill="#000"><tspan font-weight="bold">131</tspan><tspan dx="5">Trả lại kết quả đã lưu (Idempotency-Replayed: true), không trừ</tspan></text>
+<text x="708.5" y="7249.0" text-anchor="middle" font-size="12" fill="#000">tiền lần 2</text>
+<text x="190.3" y="7286.0" font-size="12" fill="#000"><tspan font-weight="bold">132</tspan><tspan dx="5">Hiển thị kết quả giao dịch</tspan></text>
+<polygon points="752.8,5972.0 1106.0,5972.0 1116.0,5982.0 1116.0,6014.0 752.8,6014.0" fill="#FEFFDD" stroke="#181818" stroke-width="1"/>
+<polyline points="1106.0,5972.0 1106.0,5982.0 1116.0,5982.0" fill="none" stroke="#181818" stroke-width="1"/>
+<text x="760.8" y="5988.0" font-size="12" fill="#000">Không tích điểm ở bước này. Điểm (EARN) chỉ được cộng</text>
+<text x="760.8" y="6003.0" font-size="12" fill="#000">khi nhân viên chuyển đơn sang COMPLETED (UC-11)</text>
+<polygon points="732.1,6732.0 1126.7,6732.0 1136.7,6742.0 1136.7,6774.0 732.1,6774.0" fill="#FEFFDD" stroke="#181818" stroke-width="1"/>
+<polyline points="1126.7,6732.0 1126.7,6742.0 1136.7,6742.0" fill="none" stroke="#181818" stroke-width="1"/>
+<text x="740.1" y="6748.0" font-size="12" fill="#000">Xử lý như nhánh "Key mới" với đơn PAYMENT_FAILED:</text>
+<text x="740.1" y="6763.0" font-size="12" fill="#000">prepareRetry kiểm tra và giữ lại kho trước, sau đó mới gọi cổng</text>
+<line x1="12.0" y1="171.0" x2="1712.6" y2="171.0" stroke="#181818" stroke-width="1"/>
+<line x1="12.0" y1="177.0" x2="1712.6" y2="177.0" stroke="#181818" stroke-width="1"/>
+<rect x="665.3" y="162.0" width="394.0" height="24" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="862.3" y="179.0" text-anchor="middle" font-size="13" font-weight="bold" fill="#000">Kiểm tra đăng nhập - UC-05 (khi chưa đăng nhập)</text>
+<line x1="12.0" y1="1282.0" x2="1712.6" y2="1282.0" stroke="#181818" stroke-width="1"/>
+<line x1="12.0" y1="1288.0" x2="1712.6" y2="1288.0" stroke="#181818" stroke-width="1"/>
+<rect x="753.5" y="1273.0" width="217.7" height="24" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="862.3" y="1290.0" text-anchor="middle" font-size="13" font-weight="bold" fill="#000">Hiển thị tổng tiền - UC-06</text>
+<line x1="12.0" y1="1417.0" x2="1712.6" y2="1417.0" stroke="#181818" stroke-width="1"/>
+<line x1="12.0" y1="1423.0" x2="1712.6" y2="1423.0" stroke="#181818" stroke-width="1"/>
+<rect x="699.9" y="1408.0" width="324.8" height="24" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="862.3" y="1425.0" text-anchor="middle" font-size="13" font-weight="bold" fill="#000">Áp mã khuyến mãi - UC-06.3 (khi có mã)</text>
+<line x1="12.0" y1="2359.0" x2="1712.6" y2="2359.0" stroke="#181818" stroke-width="1"/>
+<line x1="12.0" y1="2365.0" x2="1712.6" y2="2365.0" stroke="#181818" stroke-width="1"/>
+<rect x="768.3" y="2350.0" width="188.0" height="24" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="862.3" y="2367.0" text-anchor="middle" font-size="13" font-weight="bold" fill="#000">Tạo đơn hàng - UC-06</text>
+<line x1="12.0" y1="2952.0" x2="1712.6" y2="2952.0" stroke="#181818" stroke-width="1"/>
+<line x1="12.0" y1="2958.0" x2="1712.6" y2="2958.0" stroke="#181818" stroke-width="1"/>
+<rect x="694.2" y="2943.0" width="336.2" height="24" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="862.3" y="2960.0" text-anchor="middle" font-size="13" font-weight="bold" fill="#000">Kiểm tra và giữ kho nguyên liệu - UC-06.2</text>
+<line x1="12.0" y1="4125.0" x2="1712.6" y2="4125.0" stroke="#181818" stroke-width="1"/>
+<line x1="12.0" y1="4131.0" x2="1712.6" y2="4131.0" stroke="#181818" stroke-width="1"/>
+<rect x="788.7" y="4116.0" width="147.1" height="24" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="862.3" y="4133.0" text-anchor="middle" font-size="13" font-weight="bold" fill="#000">Lưu đơn - UC-06</text>
+<line x1="12.0" y1="4379.0" x2="1712.6" y2="4379.0" stroke="#181818" stroke-width="1"/>
+<line x1="12.0" y1="4385.0" x2="1712.6" y2="4385.0" stroke="#181818" stroke-width="1"/>
+<rect x="702.0" y="4370.0" width="320.6" height="24" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="862.3" y="4387.0" text-anchor="middle" font-size="13" font-weight="bold" fill="#000">Thanh toán qua cổng mô phỏng - UC-07</text>
+<line x1="12.0" y1="6045.0" x2="1712.6" y2="6045.0" stroke="#181818" stroke-width="1"/>
+<line x1="12.0" y1="6051.0" x2="1712.6" y2="6051.0" stroke="#181818" stroke-width="1"/>
+<rect x="776.3" y="6036.0" width="171.9" height="24" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="862.3" y="6053.0" text-anchor="middle" font-size="13" font-weight="bold" fill="#000">Kết quả thanh toán</text>
+<polygon points="12.0,330.0 47.9,330.0 47.9,340.0 38.9,349.0 12.0,349.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="21.0" y="344.0" font-size="12" font-weight="bold" fill="#000">alt</text>
+<rect x="51.9" y="332.0" width="90.8" height="16" fill="#ffffff"/>
+<text x="55.9" y="344.0" font-size="12" font-weight="bold" fill="#000">[JWT hợp lệ]</text>
+<rect x="16.0" y="401.0" width="251.1" height="16" fill="#ffffff"/>
+<text x="20.0" y="413.0" font-size="12" font-weight="bold" fill="#000">[Chưa đăng nhập hoặc JWT hết hạn]</text>
+<polygon points="12.0,1458.0 52.6,1458.0 52.6,1468.0 43.6,1477.0 12.0,1477.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="21.0" y="1472.0" font-size="12" font-weight="bold" fill="#000">opt</text>
+<rect x="56.6" y="1460.0" width="187.5" height="16" fill="#ffffff"/>
+<text x="60.6" y="1472.0" font-size="12" font-weight="bold" fill="#000">[Khách có mã khuyến mãi]</text>
+<polygon points="12.0,2577.0 68.7,2577.0 68.7,2587.0 59.7,2596.0 12.0,2596.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="21.0" y="2591.0" font-size="12" font-weight="bold" fill="#000">break</text>
+<rect x="72.7" y="2579.0" width="263.8" height="16" fill="#ffffff"/>
+<text x="76.7" y="2591.0" font-size="12" font-weight="bold" fill="#000">[JWT hết hạn khi gửi yêu cầu đặt đơn]</text>
+<polygon points="12.0,2817.0 68.7,2817.0 68.7,2827.0 59.7,2836.0 12.0,2836.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="21.0" y="2831.0" font-size="12" font-weight="bold" fill="#000">break</text>
+<rect x="72.7" y="2819.0" width="501.9" height="16" fill="#ffffff"/>
+<text x="76.7" y="2831.0" font-size="12" font-weight="bold" fill="#000">[Giỏ hàng không hợp lệ (giỏ rỗng, số lượng sai, sản phẩm không tồn tại)]</text>
+<polygon points="12.0,3129.0 59.2,3129.0 59.2,3139.0 50.2,3148.0 12.0,3148.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="21.0" y="3143.0" font-size="12" font-weight="bold" fill="#000">loop</text>
+<rect x="63.2" y="3131.0" width="219.5" height="16" fill="#ffffff"/>
+<text x="67.2" y="3143.0" font-size="12" font-weight="bold" fill="#000">[Với mỗi nguyên liệu cần dùng]</text>
+<polygon points="12.0,3295.0 68.7,3295.0 68.7,3305.0 59.7,3314.0 12.0,3314.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="21.0" y="3309.0" font-size="12" font-weight="bold" fill="#000">break</text>
+<rect x="72.7" y="3297.0" width="380.4" height="16" fill="#ffffff"/>
+<text x="76.7" y="3309.0" font-size="12" font-weight="bold" fill="#000">[Không đủ nguyên liệu (ít nhất một nguyên liệu thiếu)]</text>
+<polygon points="12.0,3491.0 59.2,3491.0 59.2,3501.0 50.2,3510.0 12.0,3510.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="21.0" y="3505.0" font-size="12" font-weight="bold" fill="#000">loop</text>
+<rect x="63.2" y="3493.0" width="153.1" height="16" fill="#ffffff"/>
+<text x="67.2" y="3505.0" font-size="12" font-weight="bold" fill="#000">[Với mỗi nguyên liệu]</text>
+<polygon points="12.0,3872.0 68.7,3872.0 68.7,3882.0 59.7,3891.0 12.0,3891.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="21.0" y="3886.0" font-size="12" font-weight="bold" fill="#000">break</text>
+<rect x="72.7" y="3874.0" width="321.0" height="16" fill="#ffffff"/>
+<text x="76.7" y="3886.0" font-size="12" font-weight="bold" fill="#000">[Vẫn xung đột sau 3 lần hoặc lỗi cơ sở dữ liệu]</text>
+<polygon points="12.0,4590.0 47.9,4590.0 47.9,4600.0 38.9,4609.0 12.0,4609.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="21.0" y="4604.0" font-size="12" font-weight="bold" fill="#000">alt</text>
+<rect x="51.9" y="4592.0" width="516.1" height="16" fill="#ffffff"/>
+<text x="55.9" y="4604.0" font-size="12" font-weight="bold" fill="#000">[Key đã xử lý xong và cùng payload (replay, kiểm tra trước trạng thái đơn)]</text>
+<rect x="16.0" y="4713.0" width="243.5" height="16" fill="#ffffff"/>
+<text x="20.0" y="4725.0" font-size="12" font-weight="bold" fill="#000">[Key đã dùng nhưng payload khác]</text>
+<rect x="16.0" y="4817.0" width="226.5" height="16" fill="#ffffff"/>
+<text x="20.0" y="4829.0" font-size="12" font-weight="bold" fill="#000">[Key đang xử lý (IN_PROGRESS)]</text>
+<rect x="16.0" y="4921.0" width="73.1" height="16" fill="#ffffff"/>
+<text x="20.0" y="4933.0" font-size="12" font-weight="bold" fill="#000">[Key mới]</text>
+<polygon points="12.0,7026.0 52.6,7026.0 52.6,7036.0 43.6,7045.0 12.0,7045.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="21.0" y="7040.0" font-size="12" font-weight="bold" fill="#000">opt</text>
+<rect x="56.6" y="7028.0" width="414.1" height="16" fill="#ffffff"/>
+<text x="60.6" y="7040.0" font-size="12" font-weight="bold" fill="#000">[Mất kết nối, UI chưa nhận được phản hồi (chưa rõ kết quả)]</text>
+<polygon points="19.0,505.0 66.2,505.0 66.2,515.0 57.2,524.0 19.0,524.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="28.0" y="519.0" font-size="12" font-weight="bold" fill="#000">loop</text>
+<rect x="70.2" y="507.0" width="302.4" height="16" fill="#ffffff"/>
+<text x="74.2" y="519.0" font-size="12" font-weight="bold" fill="#000">[Lặp lại cho đến khi đăng nhập thành công]</text>
+<polygon points="19.0,1640.0 54.9,1640.0 54.9,1650.0 45.9,1659.0 19.0,1659.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="28.0" y="1654.0" font-size="12" font-weight="bold" fill="#000">alt</text>
+<rect x="58.9" y="1642.0" width="133.9" height="16" fill="#ffffff"/>
+<text x="62.9" y="1654.0" font-size="12" font-weight="bold" fill="#000">[Mã không tồn tại]</text>
+<rect x="23.0" y="1748.0" width="227.0" height="16" fill="#ffffff"/>
+<text x="27.0" y="1760.0" font-size="12" font-weight="bold" fill="#000">[Mã hết hạn hoặc hết lượt dùng]</text>
+<rect x="23.0" y="1852.0" width="124.5" height="16" fill="#ffffff"/>
+<text x="27.0" y="1864.0" font-size="12" font-weight="bold" fill="#000">[Mã còn hiệu lực]</text>
+<polygon points="19.0,3614.0 59.6,3614.0 59.6,3624.0 50.6,3633.0 19.0,3633.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="28.0" y="3628.0" font-size="12" font-weight="bold" fill="#000">opt</text>
+<rect x="63.6" y="3616.0" width="343.0" height="16" fill="#ffffff"/>
+<text x="67.6" y="3628.0" font-size="12" font-weight="bold" fill="#000">[Xung đột đồng thời (version đã bị đơn khác đổi)]</text>
+<polygon points="19.0,5025.0 54.9,5025.0 54.9,5035.0 45.9,5044.0 19.0,5044.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="28.0" y="5039.0" font-size="12" font-weight="bold" fill="#000">alt</text>
+<rect x="58.9" y="5027.0" width="543.1" height="16" fill="#ffffff"/>
+<text x="62.9" y="5039.0" font-size="12" font-weight="bold" fill="#000">[Đơn không ở PENDING hoặc PAYMENT_FAILED (đã PAID, đã hủy, không hợp lệ)]</text>
+<rect x="23.0" y="5133.0" width="267.0" height="16" fill="#ffffff"/>
+<text x="27.0" y="5145.0" font-size="12" font-weight="bold" fill="#000">[Đơn PENDING hoặc PAYMENT_FAILED]</text>
+<polygon points="26.0,657.0 61.9,657.0 61.9,667.0 52.9,676.0 26.0,676.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="35.0" y="671.0" font-size="12" font-weight="bold" fill="#000">alt</text>
+<rect x="65.9" y="659.0" width="404.5" height="16" fill="#ffffff"/>
+<text x="69.9" y="671.0" font-size="12" font-weight="bold" fill="#000">[Dữ liệu không hợp lệ (email sai định dạng hoặc để trống)]</text>
+<rect x="30.0" y="765.0" width="112.5" height="16" fill="#ffffff"/>
+<text x="34.0" y="777.0" font-size="12" font-weight="bold" fill="#000">[Dữ liệu hợp lệ]</text>
+<polygon points="26.0,1926.0 61.9,1926.0 61.9,1936.0 52.9,1945.0 26.0,1945.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="35.0" y="1940.0" font-size="12" font-weight="bold" fill="#000">alt</text>
+<rect x="65.9" y="1928.0" width="170.1" height="16" fill="#ffffff"/>
+<text x="69.9" y="1940.0" font-size="12" font-weight="bold" fill="#000">[Đơn chưa đủ điều kiện]</text>
+<rect x="30.0" y="2034.0" width="133.6" height="16" fill="#ffffff"/>
+<text x="34.0" y="2046.0" font-size="12" font-weight="bold" fill="#000">[Đơn đủ điều kiện]</text>
+<polygon points="26.0,3648.0 73.2,3648.0 73.2,3658.0 64.2,3667.0 26.0,3667.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="35.0" y="3662.0" font-size="12" font-weight="bold" fill="#000">loop</text>
+<rect x="77.2" y="3650.0" width="217.6" height="16" fill="#ffffff"/>
+<text x="81.2" y="3662.0" font-size="12" font-weight="bold" fill="#000">[Đọc lại và thử lại, tối đa 3 lần]</text>
+<polygon points="26.0,5163.0 66.6,5163.0 66.6,5173.0 57.6,5182.0 26.0,5182.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="35.0" y="5177.0" font-size="12" font-weight="bold" fill="#000">opt</text>
+<rect x="70.6" y="5165.0" width="417.6" height="16" fill="#ffffff"/>
+<text x="74.6" y="5177.0" font-size="12" font-weight="bold" fill="#000">[Đơn PAYMENT_FAILED (thử lại bằng key mới trên cùng đơn)]</text>
+<polygon points="26.0,5755.0 61.9,5755.0 61.9,5765.0 52.9,5774.0 26.0,5774.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="35.0" y="5769.0" font-size="12" font-weight="bold" fill="#000">alt</text>
+<rect x="65.9" y="5757.0" width="248.5" height="16" fill="#ffffff"/>
+<text x="69.9" y="5769.0" font-size="12" font-weight="bold" fill="#000">[Cổng thanh toán xử lý thành công]</text>
+<rect x="30.0" y="6278.0" width="637.2" height="16" fill="#ffffff"/>
+<text x="34.0" y="6290.0" font-size="12" font-weight="bold" fill="#000">[Cổng xác nhận thất bại (số dư không đủ, thẻ bị từ chối, cổng trả lỗi) hoặc quá thời gian chờ]</text>
+<polygon points="33.0,913.0 68.9,913.0 68.9,923.0 59.9,932.0 33.0,932.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="42.0" y="927.0" font-size="12" font-weight="bold" fill="#000">alt</text>
+<rect x="72.9" y="915.0" width="278.5" height="16" fill="#ffffff"/>
+<text x="76.9" y="927.0" font-size="12" font-weight="bold" fill="#000">[Email không tồn tại hoặc sai mật khẩu]</text>
+<rect x="37.0" y="1021.0" width="198.0" height="16" fill="#ffffff"/>
+<text x="41.0" y="1033.0" font-size="12" font-weight="bold" fill="#000">[Thông tin đăng nhập đúng]</text>
+<polygon points="33.0,2182.0 73.6,2182.0 73.6,2192.0 64.6,2201.0 33.0,2201.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="42.0" y="2196.0" font-size="12" font-weight="bold" fill="#000">opt</text>
+<rect x="77.6" y="2184.0" width="148.1" height="16" fill="#ffffff"/>
+<text x="81.6" y="2196.0" font-size="12" font-weight="bold" fill="#000">[Khách bỏ mã đã áp]</text>
+<polygon points="33.0,5271.0 89.7,5271.0 89.7,5281.0 80.7,5290.0 33.0,5290.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="42.0" y="5285.0" font-size="12" font-weight="bold" fill="#000">break</text>
+<rect x="93.7" y="5273.0" width="239.8" height="16" fill="#ffffff"/>
+<text x="97.7" y="5285.0" font-size="12" font-weight="bold" fill="#000">[Không đủ hàng hoặc mã hết lượt]</text>
+<polygon points="33.0,6582.0 68.9,6582.0 68.9,6592.0 59.9,6601.0 33.0,6601.0" fill="#EEEEEE" stroke="#181818" stroke-width="1.2"/>
+<text x="42.0" y="6596.0" font-size="12" font-weight="bold" fill="#000">alt</text>
+<rect x="72.9" y="6584.0" width="312.8" height="16" fill="#ffffff"/>
+<text x="76.9" y="6596.0" font-size="12" font-weight="bold" fill="#000">[Khách muốn thử lần mới (đã xác nhận FAIL)]</text>
+<rect x="37.0" y="6866.0" width="119.2" height="16" fill="#ffffff"/>
+<text x="41.0" y="6878.0" font-size="12" font-weight="bold" fill="#000">[Khách hủy đơn]</text>
+<circle cx="81.8" cy="59.0" r="8" fill="#E2E2F0" stroke="#181818" stroke-width="1.2"/>
+<path d="M81.8,67.0 V92.0 M68.8,77.0 H94.8 M81.8,92.0 L68.8,107.0 M81.8,92.0 L94.8,107.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<text x="81.8" y="124.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Khách hàng</text>
+<text x="81.8" y="139.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">(Customer)</text>
+<circle cx="81.8" cy="7354.0" r="8" fill="#E2E2F0" stroke="#181818" stroke-width="1.2"/>
+<path d="M81.8,7362.0 V7387.0 M68.8,7372.0 H94.8 M81.8,7387.0 L68.8,7402.0 M81.8,7387.0 L94.8,7402.0" fill="none" stroke="#181818" stroke-width="1.2"/>
+<text x="81.8" y="7419.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Khách hàng</text>
+<text x="81.8" y="7434.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">(Customer)</text>
+<rect x="432.5" y="70.0" width="100.0" height="37.0" rx="3" fill="#E2E2F0" stroke="#181818" stroke-width="1.2"/>
+<text x="482.5" y="88.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Next.js UI</text>
+<rect x="432.5" y="7365.0" width="100.0" height="37.0" rx="3" fill="#E2E2F0" stroke="#181818" stroke-width="1.2"/>
+<text x="482.5" y="7383.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Next.js UI</text>
+<rect x="884.4" y="70.0" width="100.0" height="37.0" rx="3" fill="#E2E2F0" stroke="#181818" stroke-width="1.2"/>
+<text x="934.4" y="88.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">NestJS API</text>
+<rect x="884.4" y="7365.0" width="100.0" height="37.0" rx="3" fill="#E2E2F0" stroke="#181818" stroke-width="1.2"/>
+<text x="934.4" y="7383.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">NestJS API</text>
+<rect x="1331.4" y="70.0" width="114.0" height="52.0" rx="3" fill="#E2E2F0" stroke="#181818" stroke-width="1.2"/>
+<text x="1388.4" y="88.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Database</text>
+<text x="1388.4" y="103.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">(PostgreSQL)</text>
+<rect x="1331.4" y="7365.0" width="114.0" height="52.0" rx="3" fill="#E2E2F0" stroke="#181818" stroke-width="1.2"/>
+<text x="1388.4" y="7383.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Database</text>
+<text x="1388.4" y="7398.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">(PostgreSQL)</text>
+<rect x="1475.4" y="70.0" width="219.2" height="52.0" rx="3" fill="#E2E2F0" stroke="#181818" stroke-width="1.2"/>
+<text x="1585.0" y="88.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Payment Service</text>
+<text x="1585.0" y="103.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">(Cổng thanh toán mô phỏng)</text>
+<rect x="1475.4" y="7365.0" width="219.2" height="52.0" rx="3" fill="#E2E2F0" stroke="#181818" stroke-width="1.2"/>
+<text x="1585.0" y="7383.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Payment Service</text>
+<text x="1585.0" y="7398.0" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">(Cổng thanh toán mô phỏng)</text>
+<metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYToxYWJlODk5Ni00ZWE3LTRmNmUtYWQ5MC0wOTA4MDE0ZGMyMTcAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaAhVuwv4M70FlCN6neukvH4AAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDo1NGMxNDY3MC1lZWU4LTRkMjctOWM1NC1mM2FmZTc5MzAzZGZscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoFsD1L8aqexFY5rDeSCLeWgAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggr6H0yWyBQXtigodMxYqSkOtUIpDi9/t6fpCmzIS+hRqkZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaD8bjF1pab4MiTZ2ebqIdAkAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRKAAAAAAAAAAAAAGRoYXNoWCB60NCCA4n9XNVasLsxU+zuXj9YoAYI4vmo7yBf6VZXnmRuYW1lbmp1bWJmIG1hbmlmZXN0amV4Y2x1c2lvbnOBomVzdGFydBoAAQvuZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjFhYmU4OTk2LTRlYTctNGY2ZS1hZDkwLTA5MDgwMTRkYzIxNy9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOmM2ODRhNTcxLTRhNmMtNDk1Ny1hMzk4LTc1OGVjYWNkMDZmOXJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCCvofTJbIFBe2KCh0zFipKQ61QikOL3+3p+kKbMhL6FGqJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggu0oj/HUqyCadc7x2mtjex8Qwp5DST6KGKpUGsSErdhOiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggI4PYEARav7BfbAloA3d2K1d7ufNGLFdi7jya97JdSu10Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQMTuTJLoYc98ArBgchZy0yH2F7vl5kX8SKUQ3xrBLY+R4EZiiRP7uISo0NeCjEwKrUlo8OI18y4fh/y6hC6Hakw=</c2pa:manifest></metadata></svg>
