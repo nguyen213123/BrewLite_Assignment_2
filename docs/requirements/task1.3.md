@@ -4,7 +4,7 @@
 
 **Sơ đồ Use Case: Đặt và thanh toán đơn hàng**
 
-![Sơ đồ Use Case Đặt và thanh toán đơn hàng](./UC_06.svg)
+![Sơ đồ Use Case Đặt và thanh toán đơn hàng](./usecase_chitiet.svg)
 
 ## Đặc tả các Use Case
 
