@@ -7,7 +7,7 @@ subtitle: "Assignment 2 – Task 1.2 – Yêu cầu chức năng và phi chức 
 |---|---|
 | **Dự án** | BrewLite – ứng dụng đặt cà phê không dùng tiền mặt |
 | **Môn học** | Công nghệ Phần mềm – Trường Đại học Sài Gòn, Khoa CNTT |
-| **Phiên bản** | 1.0 |
+| **Phiên bản** | 1.1 |
 | **Ngày** | 07/11/2026 |
 
 **Giới thiệu & Quy ước tài liệu:**
@@ -48,7 +48,7 @@ Khách lọc danh sách theo nhóm đồ uống (`category`: cà phê, trà, đ�
 
 Hệ thống cung cấp `GET /api/products/:id` và màn hình/modal tùy chỉnh sản phẩm gồm hình, tên, mô tả, giá gốc (`basePrice`), các lựa chọn size (`sizes`: S, M, L) và danh sách topping khả dụng (`toppings`).
 
-- **AC-03.1** Given sản phẩm tồn tại và `isAvailable = true`, When khách mở chi tiết, Then hệ thống hiển thị đầy đủ thông tin sản phẩm, bảng phụ thu size (`S: +0đ`, `M: +5.000đ`, `L: +10.000đ`) và danh sách topping.
+- **AC-03.1** Given sản phẩm đang mở bán, When mở chi tiết, Then hiển thị các size thực tế và giá tuyệt đối từ `ProductSize.price`; không áp dụng bảng phụ thu cố định cho mọi sản phẩm.
 - **AC-03.2** Given `id` không tồn tại hoặc sản phẩm có `isAvailable = false`, When gọi `GET /api/products/:id`, Then API trả mã `404 PRODUCT_NOT_FOUND` và giao diện hiển thị thông báo không tìm thấy.
 - **AC-03.3** Given kho nguyên liệu (`Ingredient.stock`) không đủ đáp ứng định mức công thức của sản phẩm/topping khi đặt đơn, When khách gửi yêu cầu tạo đơn, Then hệ thống báo hết hàng (`409 OUT_OF_STOCK`) kèm thông tin nguyên liệu thiếu và giữ nguyên giỏ để khách điều chỉnh.
 - **Kiểm chứng:** I, U.
@@ -57,18 +57,18 @@ Hệ thống cung cấp `GET /api/products/:id` và màn hình/modal tùy chỉn
 
 Khách chọn size (`S`, `M`, `L` – tối đa 1 size) và topping (0 hoặc nhiều topping); giá hiển thị cập nhật tức thời theo lựa chọn.
 
-- **AC-04.1** Given khách đang xem chi tiết sản phẩm, When chọn size (`S`, `M`, `L`), Then giá cập nhật theo bảng phụ thu size (`SIZE_DELTAS`: `S = 0`, `M = 5000`, `L = 10000`).
+- **AC-04.1** Given khách chọn size, When thay đổi size, Then đơn giá lấy từ bản ghi `ProductSize` tương ứng, cộng tổng giá topping đã chọn.
 - **AC-04.2** Given khách chọn một hoặc nhiều topping, When thay đổi lựa chọn, Then đơn giá cộng thêm đúng tổng phụ thu của các topping đã chọn (`toppingTotal`).
-- **AC-04.3** Given khách mở khung chọn tùy chọn, When chưa đổi size, Then hệ thống chọn sẵn size mặc định (`S` hoặc theo cấu hình UI) và chuẩn hóa danh sách `toppingIds` (loại bỏ trùng lặp, sắp xếp tăng dần để định danh dòng giỏ hàng).
-- **AC-04.4** Công thức giá dòng (`calcLineTotal` trong `PricingService`): `unitPrice = basePrice + SIZE_DELTAS[size] + sum(topping.price)`, `lineTotal = unitPrice × quantity`, được kiểm chứng bằng unit test ở cả frontend và backend.
+- **AC-04.3** Given khách mở khung chọn tùy chọn, When chưa đổi size, Then hệ thống chọn sẵn size mặc định (size thực tế được UI chọn) và chuẩn hóa danh sách `toppingIds` (loại bỏ trùng lặp, sắp xếp tăng dần để định danh dòng giỏ hàng).
+- **AC-04.4** Công thức giá dòng (`calcLineTotal` trong `PricingService`): `unitPrice = ProductSize.price + sum(topping.price)`, `lineTotal = unitPrice × quantity`, được kiểm chứng bằng unit test ở cả frontend và backend.
 - **Kiểm chứng:** U.
 
 ## 1.3 Giỏ hàng
 
 ### FR-05 – Thêm sản phẩm vào giỏ `Must`
 
-- **AC-05.1** Given sản phẩm đang mở bán, When khách bấm "Thêm vào giỏ" (số lượng từ 1 đến 20 mỗi dòng), Then sản phẩm xuất hiện trong giỏ với đúng `productId`, `size`, `toppingIds`, `quantity` và badge tổng số ly trên thanh điều hướng tăng tương ứng.
-- **AC-05.2** Given giỏ đã có cùng sản phẩm với cùng `size` và cùng tập `toppingIds` (sau khi sort), When khách thêm tiếp, Then số lượng của dòng đó được cộng dồn (tối đa 20 ly/dòng) thay vì tạo dòng mới.
+- **AC-05.1** Given sản phẩm đang mở bán, When khách bấm "Thêm vào giỏ" (số lượng từ 1 đến 99 mỗi dòng), Then sản phẩm xuất hiện trong giỏ với đúng `productId`, `size`, `toppingIds`, `quantity` và badge tổng số ly trên thanh điều hướng tăng tương ứng.
+- **AC-05.2** Given giỏ đã có cùng sản phẩm với cùng `size` và cùng tập `toppingIds` (sau khi sort), When khách thêm tiếp, Then số lượng của dòng đó được cộng dồn (tối đa 99 ly/dòng) thay vì tạo dòng mới.
 - **AC-05.3** Given khách chưa đăng nhập, When thêm vào giỏ, Then thao tác vẫn thành công (giỏ hàng hoạt động ở client không yêu cầu đăng nhập).
 - **Kiểm chứng:** U, E.
 
@@ -82,8 +82,8 @@ Khách chọn size (`S`, `M`, `L` – tối đa 1 size) và topping (0 hoặc nh
 
 ### FR-07 – Lưu trạng thái giỏ trên trình duyệt `Should`
 
-- **AC-07.1** Given giỏ có sản phẩm (và mã khuyến mãi đang chọn nếu có), When khách tải lại trang hoặc đóng và mở lại trình duyệt, Then giỏ được khôi phục từ `localStorage` (`brewlite_cart_v1` / `brewlite_promo_v1`).
-- **AC-07.2** Given đơn được thanh toán thành công (`PAID`), When hoàn tất thanh toán, Then giỏ hàng và dữ liệu báo giá tạm (`sessionStorage`) được làm trống.
+- **AC-07.1** Giỏ được lưu bằng Zustand persist trong `localStorage` với khóa `brewlite-cart`, dùng chung cho trình duyệt; không có bảng giỏ hàng theo tài khoản trong schema.
+- **AC-07.2** Sau khi xác nhận lại đơn thanh toán thành công qua API, giao diện loại các dòng đã mua khỏi giỏ; giữ các món được thêm sau đó. Thanh toán lỗi không xóa giỏ.
 - **Kiểm chứng:** U, E.
 
 ## 1.4 Xác thực
@@ -93,9 +93,9 @@ Khách chọn size (`S`, `M`, `L` – tối đa 1 size) và topping (0 hoặc nh
 API `POST /api/auth/register` nhận `email` (chuẩn hóa chữ thường `trim().toLowerCase()`), `password` và `name`.
 
 - **AC-08.1** Given email hợp lệ và chưa tồn tại, When gửi đăng ký với mật khẩu đạt quy tắc (tối thiểu 8 ký tự, có ít nhất 1 chữ cái và 1 chữ số) và tên hợp lệ, Then hệ thống tạo tài khoản, trả mã `201` kèm `accessToken` (JWT) và thông tin `user` (`id`, `email`, `name`, `role`, `loyaltyPoints`) mà không trả về `passwordHash`.
-- **AC-08.2** Given email đã tồn tại, When đăng ký lại, Then hệ thống trả mã `409 EMAIL_TAKEN` và thông báo email đã được sử dụng.
+- **AC-08.2** Given email đã tồn tại, When đăng ký lại, Then hệ thống trả mã `409 EMAIL_ALREADY_EXISTS` và thông báo email đã được sử dụng.
 - **AC-08.3** Given email sai định dạng, thiếu tên hoặc mật khẩu không đủ độ mạnh, When đăng ký, Then hệ thống trả mã `400 VALIDATION_ERROR` kèm chi tiết lỗi.
-- **AC-08.4** Mật khẩu được lưu dưới dạng băm `bcrypt` (cost factor = `10`); không có mật khẩu thô trong cơ sở dữ liệu hay log.
+- **AC-08.4** Mật khẩu được lưu dưới dạng băm `bcrypt` (cost factor = `12`); không có mật khẩu thô trong cơ sở dữ liệu hay log.
 - **AC-08.5** Tài khoản đăng ký công khai luôn có vai trò `CUSTOMER`; tài khoản nhân viên (`STAFF`) hoặc quản trị (`ADMIN`) chỉ được khởi tạo bằng database seed hoặc bởi Admin, không tự đăng ký qua endpoint công khai được.
 - **Kiểm chứng:** U, I.
 
@@ -114,7 +114,7 @@ API `POST /api/auth/login` xác thực thông tin và trả JWT; API `GET /api/a
 - **AC-10.1** Given khách chưa đăng nhập, When gọi `POST /api/orders/quote`, `POST /api/orders`, `POST /api/payments`, `GET /api/orders/me` hoặc `GET /api/loyalty/me` không có JWT hợp lệ, Then API trả mã `401 UNAUTHORIZED`.
 - **AC-10.2** Given khách chưa đăng nhập và giỏ có sản phẩm, When chuyển sang bước thanh toán (`/checkout`), Then giao diện chuyển đến `/login?redirect=/checkout` (có liên kết sang `/register?redirect=/checkout`); sau khi đăng nhập hoặc đăng ký thành công, khách được đưa quay lại `/checkout` và giỏ hàng vẫn nguyên vẹn.
 - **AC-10.3** Given khách đã đăng nhập, When bấm chuyển sang bước thanh toán, Then giao diện đi thẳng tới màn hình xác nhận đặt đơn & thanh toán, không bị chuyển sang màn hình đăng nhập.
-- **AC-10.4** Given khách hàng A, When truy cập hoặc thao tác trên đơn hàng của khách hàng B (`GET /api/orders/:id`, `POST /api/orders/:id/cancel`, `POST /api/payments`), Then API trả mã `403 FORBIDDEN`.
+- **AC-10.4** Given người dùng truy cập đơn của người khác qua API dành cho chủ đơn, Then trả `404 ORDER_NOT_FOUND`, tránh tiết lộ sự tồn tại của đơn.
 - **Kiểm chứng:** I, E.
 
 ## 1.5 Đặt đơn
@@ -123,7 +123,7 @@ API `POST /api/auth/login` xác thực thông tin và trả JWT; API `GET /api/a
 
 Hệ thống cung cấp `POST /api/orders/quote` để tính thử giá và `POST /api/orders` (kèm header bắt buộc `Idempotency-Key`) để tạo đơn hàng.
 
-- **AC-11.1** Given khách hàng đã đăng nhập, dữ liệu giỏ hợp lệ (1–20 dòng, mỗi dòng `quantity` từ 1 đến 20) và có `Idempotency-Key` hợp lệ, When gửi `POST /api/orders`, Then hệ thống tạo `Order` ở trạng thái `PENDING` (`reservationStatus = HELD`) cùng các `OrderItem`, `OrderItemTopping` và `OrderIngredientHold`, trả mã `201` gồm `id`, `orderNumber` (`BL-YYYYMMDD-XXXXXX`), `subtotal`, `discount`, `total` và danh sách `items`.
+- **AC-11.1** Given khách hàng đã đăng nhập, dữ liệu giỏ hợp lệ (1–20 dòng, mỗi dòng `quantity` từ 1 đến 99) và có `Idempotency-Key` hợp lệ, When gửi `POST /api/orders`, Then hệ thống tạo `Order` ở trạng thái `PENDING` (`reservationStatus = HELD`) cùng các `OrderItem`, `OrderItemTopping` và `OrderIngredientHold`, trả mã `201` gồm `id`, `code` (`BL-YYYYMMDD-XXXXXX`), `subtotal`, `discount`, `total` và danh sách `items`.
 - **AC-11.2** Hệ thống tính lại toàn bộ đơn giá, phụ thu size/topping, giảm giá khuyến mãi và tổng tiền ở phía server (`PricingService`); tuyệt đối không tin giá do client gửi lên. Nếu tổng tiền thực tế của đơn (`order.total`) chênh lệch với số tiền đã báo giá trước đó (`quotedTotal` từ `POST /api/orders/quote`), giao diện cảnh báo và yêu cầu khách hàng xác nhận đồng ý mức giá mới hoặc hủy đơn trước khi cho phép thanh toán.
 - **AC-11.3** Given giỏ trống, số lượng nhỏ hơn 1, sản phẩm/topping không tồn tại hoặc đang ngừng bán (`isAvailable = false`), hoặc thiếu header `Idempotency-Key`, When tạo đơn, Then hệ thống trả mã `400` (`VALIDATION_ERROR` / `PRODUCT_UNAVAILABLE` / `TOPPING_UNAVAILABLE` / `IDEMPOTENCY_KEY_REQUIRED`) và không tạo đơn.
 - **AC-11.4** Việc kiểm tra idempotency (`scope = CREATE_ORDER`), trừ giữ chỗ nguyên liệu, tăng lượt dùng mã khuyến mãi và lưu `Order` diễn ra nguyên tử trong một database transaction; nếu gửi lặp lại cùng `Idempotency-Key` và cùng payload, server trả lại đơn đã tạo kèm header `Idempotency-Replayed: true`.
@@ -146,9 +146,9 @@ Hệ thống cung cấp `POST /api/orders/quote` để tính thử giá và `POS
 
 API `POST /api/payments` nhận `orderId`, `method` (`WALLET` hoặc `CARD`), tùy chọn `mockOutcome` (`SUCCESS` / `FAIL`) và header bắt buộc `Idempotency-Key`. Hệ thống đồng thời cung cấp các endpoint tích hợp môi trường thử nghiệm `/api/payments/vnpay/*` và `/api/payments/stripe/*`.
 
-- **AC-13.1** Given đơn `PENDING` (hoặc `PAYMENT_FAILED` đủ điều kiện giữ lại kho) thuộc về khách hàng đang đăng nhập, When chọn phương thức không tiền mặt và xác nhận thanh toán, Then hệ thống xử lý thanh toán; khi thành công, lưu bản ghi `Payment` (`status = SUCCESS`), chuyển đơn sang `PAID` (`reservationStatus = CONSUMED`) và cộng điểm thưởng trong cùng transaction.
+- **AC-13.1** Given đơn đủ điều kiện thanh toán, When thanh toán thành công, Then lưu `Payment.status = SUCCEEDED`, chuyển đơn sang `PAID`, `reservationStatus = CONSUMED`; không trừ kho thêm lần nữa và chưa cộng điểm thưởng.
 - **AC-13.2** Giao diện thanh toán hiển thị rõ bảng tách giá (`subtotal`, `discount`, `total`), các phương thức không tiền mặt (Ví điện tử, Thẻ ngân hàng, cổng VNPay Sandbox / Stripe Test Mode) và không có lựa chọn tiền mặt.
-- **AC-13.3** Given đơn không ở trạng thái cho phép thanh toán (ví dụ đã `PAID`, `PREPARING`, `READY`, `COMPLETED` hoặc `CANCELLED`), When gọi `POST /api/payments`, Then hệ thống từ chối và trả mã `409 INVALID_STATE_TRANSITION` (hoặc `409 ORDER_ALREADY_PAID`).
+- **AC-13.3** Given đơn không ở trạng thái cho phép thanh toán (ví dụ đã `PAID`, `PREPARING`, `READY`, `COMPLETED` hoặc `CANCELLED`), When gọi `POST /api/payments`, Then hệ thống từ chối và trả mã `409 INVALID_ORDER_TRANSITION` (hoặc `409 ORDER_ALREADY_PAID`).
 - **AC-13.4** Số tiền thanh toán (`amount`) luôn do server lấy trực tiếp từ `order.total` trong cơ sở dữ liệu, không lấy từ client.
 - **Kiểm chứng:** U, I, E.
 
@@ -156,7 +156,7 @@ API `POST /api/payments` nhận `orderId`, `method` (`WALLET` hoặc `CARD`), t�
 
 - **AC-14.1** Given một yêu cầu thanh toán (`POST /api/payments`) hoặc tạo đơn (`POST /api/orders`) đã xử lý hoàn tất với `Idempotency-Key` *K* của cùng người dùng và cùng `scope`, When client gửi lại cùng *K* và cùng nội dung (`requestHash` SHA-256 trùng khớp), Then hệ thống trả lại đúng mã trạng thái và response body đã lưu kèm header `Idempotency-Replayed: true`, không tạo thêm `Order`/`Payment` và không trừ kho hay trừ tiền lần hai.
 - **AC-14.2** Given cùng `Idempotency-Key` *K* nhưng payload khác (`requestHash` khác), When gửi yêu cầu, Then hệ thống từ chối với mã `409 IDEMPOTENCY_KEY_REUSED`.
-- **AC-14.3** Given hai yêu cầu cùng `Idempotency-Key` *K* đến đồng thời khi yêu cầu thứ nhất đang xử lý (`status = IN_PROGRESS`), When yêu cầu thứ hai chờ quá thời gian lock hoặc phát hiện đang xử lý, Then chỉ một giao dịch được thực thi và yêu cầu trùng nhận kết quả replay hoặc mã `409 IDEMPOTENCY_IN_PROGRESS` (kèm header `Retry-After: 1`).
+- **AC-14.3** Given hai yêu cầu cùng `Idempotency-Key` *K* đến đồng thời khi yêu cầu thứ nhất đang xử lý (`status = PROCESSING`), When yêu cầu thứ hai chờ quá thời gian lock hoặc phát hiện đang xử lý, Then chỉ một giao dịch được thực thi và yêu cầu trùng nhận kết quả replay hoặc mã `409 IDEMPOTENCY_IN_PROGRESS` (kèm header `Retry-After: 1`).
 - **AC-14.4** Given thiếu header `Idempotency-Key` hoặc giá trị rỗng, When gọi `POST /api/orders` hoặc `POST /api/payments`, Then API trả mã `400 IDEMPOTENCY_KEY_REQUIRED`.
 - **Kiểm chứng:** U, I (test gửi lặp và gửi đồng thời cùng key là bắt buộc).
 
@@ -169,7 +169,7 @@ API `POST /api/payments` nhận `orderId`, `method` (`WALLET` hoặc `CARD`), t�
 
 ### FR-16 – Xác nhận đơn sau thanh toán `Must`
 
-- **AC-16.1** Given thanh toán thành công, When hoàn tất, Then giao diện chuyển tới màn hình chi tiết/xác nhận đơn (`/orders/:id`) hiển thị mã đơn (`orderNumber`), trạng thái `PAID`, chi tiết các món, tổng tiền và tiến trình pha chế để khách đến quầy nhận đồ uống.
+- **AC-16.1** Given thanh toán thành công, When hoàn tất, Then giao diện chuyển tới màn hình chi tiết/xác nhận đơn (`/orders/:id`) hiển thị mã đơn (`code`), trạng thái `PAID`, chi tiết các món, tổng tiền và tiến trình pha chế để khách đến quầy nhận đồ uống.
 - **AC-16.2** Màn hình xác nhận/chi tiết đơn có điều hướng rõ ràng để quay lại menu hoặc xem danh sách đơn hàng (`/orders`).
 - **Kiểm chứng:** E.
 
@@ -177,9 +177,9 @@ API `POST /api/payments` nhận `orderId`, `method` (`WALLET` hoặc `CARD`), t�
 
 ### FR-17 – Lịch sử đơn của khách hàng `Must`
 
-API `GET /api/orders/me` (hỗ trợ phân trang `page`, `pageSize` và lọc theo `status`).
+API `GET /api/orders/me` (hỗ trợ phân trang `page`, `pageSize` ; lọc `status` dành cho hàng đợi STAFF).
 
-- **AC-17.1** Given khách hàng có đơn, When mở trang lịch sử đơn (`/orders`), Then danh sách hiển thị các đơn của chính người đó (mặc định nếu là `STAFF` thì xem được hàng đợi toàn hệ thống), sắp xếp mới nhất trước (`createdAt DESC`), gồm mã đơn (`orderNumber`), thời gian, tổng tiền, trạng thái và các dòng sản phẩm.
+- **AC-17.1** Given khách hàng có đơn, When mở trang lịch sử đơn (`/orders`), Then danh sách hiển thị các đơn của chính người đó (mặc định nếu là `STAFF` thì xem được hàng đợi toàn hệ thống), sắp xếp mới nhất trước (`createdAt DESC`), gồm mã đơn (`code`), thời gian, tổng tiền, trạng thái và các dòng sản phẩm.
 - **AC-17.2** Given khách hàng chưa có đơn nào, When mở lịch sử, Then giao diện hiển thị trạng thái rỗng kèm liên kết về menu.
 - **AC-17.3** Danh sách của tài khoản `CUSTOMER` tuyệt đối không chứa đơn của người dùng khác.
 - **Kiểm chứng:** I, E.
@@ -188,34 +188,34 @@ API `GET /api/orders/me` (hỗ trợ phân trang `page`, `pageSize` và lọc th
 
 API `GET /api/orders/:id`.
 
-- **AC-18.1** Given đơn thuộc về khách hàng (hoặc người gọi là `STAFF`), When mở chi tiết đơn (`/orders/:id`), Then hiển thị đầy đủ mã đơn, các dòng sản phẩm (size, topping, số lượng, đơn giá, thành tiền), `subtotal`, `discount`, `total`, lịch sử các lần thanh toán (`payments`) và thanh tiến trình trạng thái hiện tại.
-- **AC-18.2** Given khách đang mở màn hình theo dõi đơn hoặc danh sách đơn đang hoạt động, When trạng thái đơn thay đổi ở phía quầy pha chế, Then giao diện tự động làm mới định kỳ (polling mỗi 5 giây) mà không cần tải lại trang.
+- **AC-18.1** Chi tiết đơn trả snapshot món, size, topping, số lượng, các khoản tiền và trạng thái hiện tại. Không coi danh sách lịch sử `payments` là trường đã có trong response chi tiết đơn.
+- **AC-18.2** Khách có thể tải lại trạng thái đơn. Polling tự động mỗi 5 giây là mục tiêu mở rộng, chưa được xác nhận đã triển khai ở màn hình khách hàng.
 - **Kiểm chứng:** I, E.
 
 ## 1.8 Quản lý trạng thái đơn
 
 ### FR-19 – Máy trạng thái đơn hàng `Must`
 
-Các chuyển trạng thái hợp lệ được định nghĩa tập trung tại `ALLOWED_TRANSITIONS` (`apps/api/src/orders/order-state-machine.ts`):
+Các chuyển trạng thái hợp lệ được định nghĩa tập trung tại `ORDER_TRANSITIONS` (`apps/api/src/modules/orders/domain/order-state-machine.ts`):
 - `PENDING → PAID | PAYMENT_FAILED | CANCELLED`
-- `PAYMENT_FAILED → PENDING | PAID | CANCELLED`
+- `PAYMENT_FAILED → PENDING | CANCELLED`
 - `PAID → PREPARING | CANCELLED`
 - `PREPARING → READY`
 - `READY → COMPLETED`
 - `COMPLETED` và `CANCELLED` là hai trạng thái kết thúc (terminal states).
 
-- **AC-19.1** Given đơn đang ở trạng thái *S*, When yêu cầu chuyển sang *T* không nằm trong tập chuyển hợp lệ, Then hệ thống từ chối với mã `409 INVALID_STATE_TRANSITION` và trạng thái đơn không đổi.
-- **AC-19.2** Given đơn đang ở trạng thái kết thúc (`COMPLETED` hoặc `CANCELLED`), When yêu cầu bất kỳ chuyển trạng thái nào, Then hệ thống từ chối với mã `409 INVALID_STATE_TRANSITION`.
+- **AC-19.1** Given đơn đang ở trạng thái *S*, When yêu cầu chuyển sang *T* không nằm trong tập chuyển hợp lệ, Then hệ thống từ chối với mã `409 INVALID_ORDER_TRANSITION` và trạng thái đơn không đổi.
+- **AC-19.2** Given đơn đang ở trạng thái kết thúc (`COMPLETED` hoặc `CANCELLED`), When yêu cầu bất kỳ chuyển trạng thái nào, Then hệ thống từ chối với mã `409 INVALID_ORDER_TRANSITION`.
 - **AC-19.3** Mọi chuyển trạng thái được kiểm tra qua hàm dùng chung (`canTransition` / `assertTransition`), có unit test bao phủ toàn bộ các cặp chuyển hợp lệ và không hợp lệ.
 - **Kiểm chứng:** U.
 
 ### FR-20 – Hủy đơn `Should`
 
-API `POST /api/orders/:id/cancel` cho phép khách hàng (chủ đơn) hoặc nhân viên (`STAFF`) hủy đơn khi đơn chưa bước vào pha chế.
+API `POST /api/orders/:id/cancel` cho phép khách hàng là chủ đơn hủy đơn khi đơn chưa bước vào pha chế.
 
 - **AC-20.1** Given đơn đang ở `PENDING` hoặc `PAYMENT_FAILED` thuộc về khách hàng, When khách yêu cầu hủy, Then đơn chuyển sang `CANCELLED`; nếu đơn đang giữ nguyên liệu (`reservationStatus = HELD`), hệ thống hoàn trả nguyên liệu vào `Ingredient.stock`, giảm `usedCount` của mã khuyến mãi và chuyển `reservationStatus` sang `RELEASED`.
-- **AC-20.2** Given đơn đã chuyển sang `PREPARING`, `READY` hoặc `COMPLETED`, When yêu cầu hủy, Then hệ thống từ chối với mã `409 INVALID_STATE_TRANSITION` kèm thông báo không thể hủy.
-- **AC-20.3** Given đơn đang ở trạng thái `PAID` (đã thanh toán nhưng chưa chuyển sang `PREPARING`), When khách hoặc nhân viên yêu cầu hủy, Then trong cùng một transaction hệ thống: (1) chuyển đơn sang `CANCELLED`, (2) hoàn trả nguyên liệu vào `Ingredient.stock` (`CONSUMED → RELEASED`) và hoàn lượt dùng khuyến mãi, (3) ghi bút toán đảo điểm thưởng `LoyaltyEntry` loại `REVERSE` (trừ lại số điểm đã cộng của đơn đó, đảm bảo `loyaltyPoints >= 0`).
+- **AC-20.2** Given đơn đã chuyển sang `PREPARING`, `READY` hoặc `COMPLETED`, When yêu cầu hủy, Then hệ thống từ chối với mã `409 INVALID_ORDER_TRANSITION` kèm thông báo không thể hủy.
+- **AC-20.3** Given chủ đơn hủy khi `PAID` và chưa pha chế, Then chuyển `CANCELLED`, hoàn nguyên liệu theo snapshot giữ kho và hoàn lượt mã đúng một lần. Đơn bình thường chưa có EARN nên không tạo REVERSE; chỉ đảo điểm nếu đã tồn tại EARN trước đó. Hoàn tiền qua cổng ngoài cần xử lý theo luồng thanh toán/đối soát, không đồng nhất với rollback database.
 - **Kiểm chứng:** U, I.
 
 ### FR-21 – Nhân viên quầy (Barista / Staff) cập nhật trạng thái pha chế `Should`
@@ -231,9 +231,9 @@ API `PATCH /api/orders/:id/status` được bảo vệ bởi `@Roles(Role.STAFF)
 
 ### FR-22 – Áp mã khuyến mãi `Should`
 
-Hệ thống cung cấp `GET /api/promotions` (danh sách mã đang hiệu lực), `POST /api/promotions/validate` (kiểm tra nhanh mã) và tích hợp tính giảm giá trong `POST /api/orders/quote` & `POST /api/orders`. Hỗ trợ 3 loại mã (`PromotionType`): `PERCENT` (giảm phần trăm, có thể kèm trần `maxDiscount`), `FIXED` (giảm số tiền cố định) và `FREE_TOPPING` (miễn phí phần phụ thu topping trong giỏ).
+Hệ thống cung cấp `GET /api/promotions` (danh sách mã đang hiệu lực), `POST /api/promotions/validate` (kiểm tra nhanh mã) và tích hợp tính giảm giá trong `POST /api/orders/quote` & `POST /api/orders`. Hỗ trợ đúng hai loại trong schema: `PERCENT` (phần trăm, có thể có `maxDiscount`) và `FIXED` (tiền cố định). Không có `FREE_TOPPING`.
 
-- **AC-22.1** Given mã khuyến mãi (`Promotion`, chuẩn hóa chữ hoa `trim().toUpperCase()`) có `isActive = true`, nằm trong khoảng `startsAt..endsAt`, chưa vượt giới hạn lượt dùng (`usedCount < maxUses`) và `subtotal >= minOrderAmount`, When khách áp mã, Then hệ thống tính chính xác số tiền giảm (`discount`), hiển thị rõ trên bảng giá và tăng `usedCount` một cách nguyên tử (`WHERE usedCount < maxUses`) khi tạo đơn.
+- **AC-22.1** Given mã khuyến mãi (`Promotion`, chuẩn hóa chữ hoa `trim().toUpperCase()`) có `isActive = true`, nằm trong khoảng `startsAt..endsAt`, chưa vượt giới hạn lượt dùng (`usedCount < maxUses`) và `subtotal >= minSubtotal`, When khách áp mã, Then hệ thống tính chính xác số tiền giảm (`discount`), hiển thị rõ trên bảng giá và tăng `usedCount` một cách nguyên tử (`WHERE usedCount < maxUses`) khi tạo đơn.
 - **AC-22.2** Given mã không tồn tại (`PROMO_NOT_FOUND`), đang tắt (`PROMO_INACTIVE`), hết hạn (`PROMO_EXPIRED`), hết lượt dùng (`PROMO_EXHAUSTED`) hoặc đơn chưa đạt giá trị tối thiểu (`PROMO_MIN_ORDER_NOT_MET`), When kiểm tra hoặc tạo đơn, Then hệ thống từ chối với mã lỗi cụ thể và tổng tiền không bị giảm sai.
 - **AC-22.3** Số tiền giảm không bao giờ vượt quá `subtotal` (`discount = min(rawDiscount, subtotal)`), tổng tiền sau giảm (`total = subtotal - discount`) luôn không âm và được tính toán hoàn toàn ở server.
 - **Kiểm chứng:** U, I.
@@ -242,8 +242,8 @@ Hệ thống cung cấp `GET /api/promotions` (danh sách mã đang hiệu lực
 
 Hệ thống quản lý điểm thưởng qua bảng sổ cái `LoyaltyEntry` (`EARN` / `REVERSE` với ràng buộc duy nhất `@@unique([orderId, kind])`) và cung cấp API `GET /api/loyalty/me`, `GET /api/loyalty/me/entries`.
 
-- **AC-23.1** Given đơn chuyển sang `PAID`, When giao dịch thanh toán hoàn tất, Then hệ thống tính điểm theo quy tắc `points = Math.floor(order.total / 10000)` (1 điểm cho mỗi 10.000đ); nếu `points > 0`, hệ thống tạo bản ghi `LoyaltyEntry` (`kind = EARN`) và cộng điểm vào `User.loyaltyPoints` trong cùng transaction.
-- **AC-23.2** Given đơn thanh toán thất bại (`PAYMENT_FAILED`) hoặc bị hủy từ `PENDING`, When kết thúc, Then không có điểm nào được cộng. Nếu đơn đã `PAID` sau đó bị hủy trước khi pha chế (AC-20.3), hệ thống tự động tạo bản ghi `LoyaltyEntry` (`kind = REVERSE`, `points = -earned`) và trừ lại điểm tương ứng.
+- **AC-23.1** Given đơn chuyển `READY → COMPLETED`, When transaction hoàn tất và không có thanh toán chính (`isDuplicate = false`) đã `REFUNDED`, Then tạo `EARN` với `floor(total / 10000)` và tăng `User.loyaltyPoints` trong cùng transaction. Đơn có 0 điểm vẫn có bút toán EARN để ghi nhận đã xử lý. `PAID` không cộng điểm.
+- **AC-23.2** Đơn `PENDING`, `PAID`, `PAYMENT_FAILED` hoặc bị hủy trước hoàn tất không được cộng điểm. REVERSE chỉ được tạo khi đã có EARN, không đảo điểm chỉ vì đơn từng PAID. API đọc điểm có thể đồng bộ bút toán còn thiếu cho đơn COMPLETED đủ điều kiện.
 - **AC-23.3** Nhờ khóa duy nhất `@@unique([orderId, kind])` trên `LoyaltyEntry`, việc cộng điểm (`EARN`) và đảo điểm (`REVERSE`) chỉ xảy ra tối đa một lần cho mỗi đơn, kể cả khi yêu cầu thanh toán hoặc hủy đơn bị gửi lặp.
 - **Kiểm chứng:** U, I.
 
@@ -257,7 +257,7 @@ Hệ thống quản lý điểm thưởng qua bảng sổ cái `LoyaltyEntry` (`
 
 ### FR-25 – Xem thống kê doanh thu, lượt bán và giao dịch cần đối soát `Could`
 
-API thống kê quản trị (`GET /api/admin/stats`) và API đối soát thanh toán (`GET /api/payments/manual-review`).
+API thống kê quản trị (`GET /api/auth/admin/overview`) và API đối soát thanh toán (`GET /api/payments/manual-review`).
 
 - **AC-25.1** Given tài khoản quản lý/vận hành hợp lệ, When truy vấn số liệu thống kê, Then hệ thống trả về tổng doanh thu thực nhận (tổng `total` của các đơn thành công), tổng số đơn hàng thành công, danh sách sản phẩm kèm số lượng đã bán và danh sách các giao dịch thanh toán trễ/trùng cần hoàn tiền thủ công (`requiresManualReview = true`).
 - **AC-25.2** Given các đơn hàng ở trạng thái `PENDING`, `PAYMENT_FAILED` hoặc `CANCELLED`, When tính toán doanh thu và lượt bán, Then các đơn này không được cộng vào doanh thu thực nhận.
@@ -266,11 +266,11 @@ API thống kê quản trị (`GET /api/admin/stats`) và API đối soát thanh
 
 ### FR-26 – Quản lý tài khoản nhân viên và phân quyền `Could`
 
-API `/api/admin/users` cho phép Quản lý cửa hàng tạo tài khoản nhân viên (`STAFF`) và cập nhật vai trò (`role`).
+API quản lý tài khoản thuộc `/api/auth/staff` và `/api/auth/admin/users/:id/status`; chỉ ADMIN được quản lý STAFF và trạng thái tài khoản theo phạm vi endpoint.
 
-- **AC-26.1** Given tài khoản có vai trò `ADMIN`, When tạo tài khoản mới với vai trò `STAFF` (hoặc cập nhật `role` cho tài khoản hiện có), Then hệ thống lưu tài khoản với mật khẩu băm `bcrypt` và vai trò tương ứng (đồng bộ với AC-08.5).
+- **AC-26.1** ADMIN tạo STAFF qua `POST /api/auth/staff`, liệt kê qua `GET /api/auth/staff`; khóa/mở qua `PATCH /api/auth/staff/:id/status` hoặc `PATCH /api/auth/admin/users/:id/status`. Không có API đổi role tổng quát.
 - **AC-26.2** Given tài khoản không có quyền quản trị, When gọi các endpoint quản lý người dùng, Then API trả mã `403 FORBIDDEN`.
-- **AC-26.3** Trong trường hợp chưa bật giao diện quản trị ở MVP, hệ thống vẫn khởi tạo sẵn tài khoản nhân viên (`barista@brewlite.local`, vai trò `STAFF`) và khách hàng mẫu (`alice@brewlite.local`, `bob@brewlite.local`, vai trò `CUSTOMER`) thông qua `prisma/seed.ts` để phục vụ vận hành và kiểm thử tự động.
+- **AC-26.3** Seed tại `apps/api/src/seed/seed.ts` khởi tạo tài khoản vận hành theo cấu hình. Không nâng quyền email đã thuộc tài khoản khác. Cả hai API mở khóa phải từ chối hash mật khẩu mặc định cũ bằng `LEGACY_PASSWORD_RESET_REQUIRED` và giữ tài khoản khóa; mật khẩu riêng vẫn mở khóa bình thường.
 - **Kiểm chứng:** U, I.
 
 ---
@@ -419,7 +419,7 @@ Các yêu cầu phi chức năng được tổ chức theo đúng thứ tự cá
 | FR-19 | Máy trạng thái đơn hàng | Quản lý trạng thái đơn | **Must** |
 | FR-20 | Hủy đơn (kèm hoàn kho nguyên liệu & đảo điểm thưởng) | Quản lý trạng thái đơn | **Should** |
 | FR-21 | Nhân viên quầy (`STAFF`) cập nhật trạng thái pha chế | Quản lý trạng thái đơn | **Should** |
-| FR-22 | Áp mã khuyến mãi (`PERCENT`, `FIXED`, `FREE_TOPPING`) | Khuyến mãi và điểm thưởng | **Should** |
+| FR-22 | Áp mã khuyến mãi (`PERCENT`, `FIXED`) | Khuyến mãi và điểm thưởng | **Should** |
 | FR-23 | Cộng và hoàn điểm thưởng (`LoyaltyEntry` `EARN`/`REVERSE`) | Khuyến mãi và điểm thưởng | **Should** |
 | FR-24 | Quản trị menu, nguyên liệu và mã khuyến mãi | Quản trị và Thống kê | **Could** |
 | FR-25 | Xem thống kê doanh thu, lượt bán và giao dịch cần đối soát | Quản trị và Thống kê | **Could** |
@@ -472,37 +472,37 @@ Các yêu cầu phi chức năng được tổ chức theo đúng thứ tự cá
 
 # 4. Tiêu chí chấp nhận có thể kiểm chứng cho từng yêu cầu
 
-Bên cạnh các phát biểu chi tiết theo mẫu *Given – When – Then* đã trình bày trực tiếp dưới từng yêu cầu ở **Mục 1** và **Mục 2**, bảng dưới đây tổng hợp mã tiêu chí chấp nhận, điều kiện kiểm chứng cốt lõi, loại kiểm thử (**U/I/E/M**) và nơi kiểm chứng thực tế trong codebase để phục vụ nghiệm thu tự động:
+Bên cạnh các phát biểu chi tiết theo mẫu *Given – When – Then* đã trình bày trực tiếp dưới từng yêu cầu ở **Mục 1** và **Mục 2**, bảng dưới đây tổng hợp mã tiêu chí chấp nhận, điều kiện kiểm chứng cốt lõi, loại kiểm thử (**U/I/E/M**) và test liên quan trong codebase (tên API test được tính từ `tests/api/`); test liên quan không đồng nghĩa mọi AC đã được nghiệm thu:
 
 | Yêu cầu | Mã tiêu chí chấp nhận | Điều kiện kiểm chứng cốt lõi (Verifiable Criteria) | Loại test | File test / Công cụ kiểm chứng trong codebase |
 |---|---|---|---|---|
-| **FR-01** | `AC-01.1` .. `AC-01.4` | `GET /api/products` trả `200 OK` gồm danh sách món `isAvailable = true` kèm `toppings`; UI hiển thị giá VND, trạng thái loading, rỗng và lỗi. | I, U, E | `products.e2e-spec.ts`, `menu-page.test.tsx` |
-| **FR-02** | `AC-02.1` .. `AC-02.2` | Lọc đúng theo `category` và tìm kiếm không phân biệt hoa thường theo `search`; bỏ lọc trả lại toàn bộ danh sách. | I, U | `products.e2e-spec.ts`, `menu-page.test.tsx` |
-| **FR-03** | `AC-03.1` .. `AC-03.3` | `GET /api/products/:id` trả `200` khi hợp lệ, trả `404 PRODUCT_NOT_FOUND` khi không tồn tại hoặc ngừng bán; báo `409 OUT_OF_STOCK` khi thiếu nguyên liệu. | I, U | `products.e2e-spec.ts`, `inventory.e2e-spec.ts` |
-| **FR-04** | `AC-04.1` .. `AC-04.4` | Tính đúng `unitPrice = basePrice + SIZE_DELTAS[size] + sum(topping.price)` và `lineTotal = unitPrice × quantity` (số nguyên VND). | U | `pricing.unit.e2e-spec.ts`, `cart-context.test.tsx` |
-| **FR-05** | `AC-05.1` .. `AC-05.3` | Thêm vào giỏ không cần đăng nhập; gộp dòng nếu trùng `(productId, size, sortedToppingIds)` (tối đa 20 ly/dòng); cập nhật badge số lượng. | U, E | `cart-context.test.tsx`, `product-card.test.tsx` |
-| **FR-06** | `AC-06.1` .. `AC-06.4` | Tăng/giảm số lượng, xóa dòng khi về 0, khóa nút đặt hàng khi giỏ trống, đối chiếu báo giá qua `POST /api/orders/quote`. | U, I, E | `cart-drawer.test.tsx`, `checkout-page.test.tsx` |
-| **FR-07** | `AC-07.1` .. `AC-07.2` | Giỏ hàng và mã khuyến mãi được lưu/khôi phục từ `localStorage` (`brewlite_cart_v1`) và tự động xóa sạch sau khi đơn `PAID`. | U, E | `cart-context.test.tsx`, `checkout-page.test.tsx` |
-| **FR-08** | `AC-08.1` .. `AC-08.5` | `POST /api/auth/register` tạo tài khoản `CUSTOMER` (`201`), băm `bcrypt` (cost 10), không lộ `passwordHash`, trùng email trả `409 EMAIL_TAKEN`, dữ liệu sai trả `400`. | U, I | `auth.e2e-spec.ts`, `register-page.test.tsx` |
-| **FR-09** | `AC-09.1` .. `AC-09.4` | `POST /api/auth/login` trả JWT hợp lệ (`200`), sai thông tin trả `401 INVALID_CREDENTIALS` với thông điệp chung; `GET /api/auth/me` xác thực token. | U, I | `auth.e2e-spec.ts`, `login-page.test.tsx` |
-| **FR-10** | `AC-10.1` .. `AC-10.4` | Gọi API đặt đơn/thanh toán không JWT trả `401`; chưa đăng nhập vào `/checkout` chuyển hướng `/login?redirect=/checkout` giữ nguyên giỏ; truy cập đơn người khác trả `403 FORBIDDEN`. | I, E | `orders.e2e-spec.ts`, `checkout-page.test.tsx` |
-| **FR-11** | `AC-11.1` .. `AC-11.4` | `POST /api/orders` tính lại giá ở server, tạo `Order` `PENDING` (`reservationStatus = HELD`) trong 1 transaction; cảnh báo nếu giá lệch so với `quotedTotal`. | U, I, E | `orders.e2e-spec.ts`, `checkout-page.test.tsx` |
-| **FR-12** | `AC-12.1` .. `AC-12.4` | Quy đổi định mức `ProductIngredient` (S=100%, M=125%, L=150%) + `ToppingIngredient`, trừ `Ingredient.stock` với khóa lạc quan `version`, chống oversell đồng thời, hoàn kho khi `PAYMENT_FAILED`/`CANCELLED`. | U, I | `inventory.e2e-spec.ts`, `concurrency.e2e-spec.ts` |
-| **FR-13** | `AC-13.1` .. `AC-13.4` | `POST /api/payments` (và VNPay/Stripe Sandbox) lấy `amount = order.total` từ server, thành công lưu `Payment` (`SUCCESS`) và chuyển đơn sang `PAID` (`CONSUMED`). | U, I, E | `payments.e2e-spec.ts`, `vnpay-stripe-sandbox.e2e-spec.ts` |
-| **FR-14** | `AC-14.1` .. `AC-14.4` | Thiếu `Idempotency-Key` trả `400`; gửi lặp cùng key + cùng `requestHash` trả kết quả cũ kèm `Idempotency-Replayed: true`; khác payload trả `409 IDEMPOTENCY_KEY_REUSED`. | U, I | `idempotency.e2e-spec.ts`, `concurrency.e2e-spec.ts` |
-| **FR-15** | `AC-15.1` .. `AC-15.3` | Thanh toán lỗi chuyển đơn sang `PAYMENT_FAILED` và nhả kho (`RELEASED`); thử lại gọi `prepareRetry` giữ lại kho; giao dịch trễ sau hủy gắn cờ `requiresManualReview = true`. | U, I, E | `payments.e2e-spec.ts`, `vnpay-stripe-sandbox.e2e-spec.ts` |
-| **FR-16** | `AC-16.1` .. `AC-16.2` | Sau khi thanh toán thành công, màn hình `/orders/:id` hiển thị mã đơn `orderNumber`, trạng thái `PAID`, tổng tiền và nút điều hướng về menu/lịch sử. | E | `order-detail-page.test.tsx` |
-| **FR-17** | `AC-17.1` .. `AC-17.3` | `GET /api/orders/me` trả danh sách đơn của chính khách hàng theo thứ tự `createdAt DESC`, hỗ trợ phân trang và lọc `status`. | I, E | `orders.e2e-spec.ts`, `orders-page.test.tsx` |
-| **FR-18** | `AC-18.1` .. `AC-18.2` | `GET /api/orders/:id` trả chi tiết món, topping, lịch sử `payments`; giao diện tự động polling mỗi 5 giây khi đơn đang hoạt động. | I, E | `orders.e2e-spec.ts`, `order-detail-page.test.tsx` |
-| **FR-19** | `AC-19.1` .. `AC-19.3` | Hàm `assertTransition` kiểm soát mọi chuyển trạng thái theo `ALLOWED_TRANSITIONS`; chuyển sai hoặc chuyển từ trạng thái kết thúc trả `409 INVALID_STATE_TRANSITION`. | U, I | `state-machine.unit.e2e-spec.ts`, `orders.e2e-spec.ts` |
-| **FR-20** | `AC-20.1` .. `AC-20.3` | `POST /api/orders/:id/cancel` hủy đơn `PENDING`/`PAYMENT_FAILED`/`PAID`, hoàn trả nguyên liệu + lượt khuyến mãi và ghi `LoyaltyEntry` (`REVERSE`) nếu đơn đã `PAID`; từ chối nếu đã `PREPARING`. | U, I | `orders.e2e-spec.ts`, `loyalty.e2e-spec.ts` |
-| **FR-21** | `AC-21.1` .. `AC-21.3` | `PATCH /api/orders/:id/status` chỉ cho phép `Role.STAFF` chuyển `PAID → PREPARING → READY → COMPLETED`; `CUSTOMER` gọi trả `403 FORBIDDEN`. | I, E | `orders.e2e-spec.ts`, `barista-page.test.tsx` |
-| **FR-22** | `AC-22.1` .. `AC-22.3` | Kiểm tra và tính đúng giảm giá `PERCENT`, `FIXED`, `FREE_TOPPING`; tăng/hoàn `usedCount` nguyên tử; từ chối mã sai/hết hạn/hết lượt/chưa đủ `minOrderAmount`. | U, I | `promotions.e2e-spec.ts`, `pricing.unit.e2e-spec.ts` |
-| **FR-23** | `AC-23.1` .. `AC-23.3` | Cộng `floor(total / 10000)` điểm (`EARN`) khi `PAID`, đảo điểm (`REVERSE`) khi hủy đơn `PAID`; khóa duy nhất `@@unique([orderId, kind])` chống cộng trùng. | U, I | `loyalty.e2e-spec.ts` |
-| **FR-24..26** | `AC-24.1` .. `AC-26.3` | Phân quyền quản trị (`403` với tài khoản thường), đối soát `GET /api/payments/manual-review`, khởi tạo sẵn tài khoản `STAFF` và `CUSTOMER` qua `prisma/seed.ts`. | U, I | `auth.e2e-spec.ts`, `vnpay-stripe-sandbox.e2e-spec.ts` |
+| **FR-01** | `AC-01.1` .. `AC-01.4` | `GET /api/products` trả `200 OK` gồm danh sách món `isAvailable = true` kèm `toppings`; UI hiển thị giá VND, trạng thái loading, rỗng và lỗi. | I, U, E | `catalog.integration-spec.ts` |
+| **FR-02** | `AC-02.1` .. `AC-02.2` | Lọc đúng theo `category` và tìm kiếm không phân biệt hoa thường theo `search`; bỏ lọc trả lại toàn bộ danh sách. | I, U | `catalog.integration-spec.ts` |
+| **FR-03** | `AC-03.1` .. `AC-03.3` | `GET /api/products/:id` trả `200` khi hợp lệ, trả `404 PRODUCT_NOT_FOUND` khi không tồn tại hoặc ngừng bán; báo `409 OUT_OF_STOCK` khi thiếu nguyên liệu. | I, U | `inventory-stock.e2e-spec.ts` |
+| **FR-04** | `AC-04.1` .. `AC-04.4` | Giá = ProductSize.price + tổng topping; thành tiền = đơn giá × số lượng. | U | `catalog-pricing.e2e-spec.ts` |
+| **FR-05** | `AC-05.1` .. `AC-05.3` | Thêm vào giỏ không cần đăng nhập; gộp dòng nếu trùng `(productId, size, sortedToppingIds)` (tối đa 99 ly/dòng); cập nhật badge số lượng. | U, E | `apps/web/src/lib/cart/cart-store.test.ts` |
+| **FR-06** | `AC-06.1` .. `AC-06.4` | Tăng/giảm số lượng, xóa dòng khi về 0, khóa nút đặt hàng khi giỏ trống, đối chiếu báo giá qua `POST /api/orders/quote`. | U, I, E | `apps/web/src/components/checkout/Checkout.test.ts` |
+| **FR-07** | `AC-07.1` .. `AC-07.2` | Lưu giỏ trình duyệt khóa brewlite-cart; chỉ loại dòng đã mua sau xác nhận thanh toán. | U, E | `apps/web/src/lib/cart/cart-store.test.ts` |
+| **FR-08** | `AC-08.1` .. `AC-08.5` | `POST /api/auth/register` tạo tài khoản `CUSTOMER` (`201`), băm `bcrypt` (cost 12), không lộ `passwordHash`, trùng email trả `409 EMAIL_ALREADY_EXISTS`, dữ liệu sai trả `400`. | U, I | `auth.e2e-spec.ts` |
+| **FR-09** | `AC-09.1` .. `AC-09.4` | `POST /api/auth/login` trả JWT hợp lệ (`200`), sai thông tin trả `401 INVALID_CREDENTIALS` với thông điệp chung; `GET /api/auth/me` xác thực token. | U, I | `auth.e2e-spec.ts` |
+| **FR-10** | `AC-10.1` .. `AC-10.4` | Gọi API đặt đơn/thanh toán không JWT trả `401`; chưa đăng nhập vào `/checkout` chuyển hướng `/login?redirect=/checkout` giữ nguyên giỏ; truy cập đơn người khác trả `404 ORDER_NOT_FOUND`. | I, E | `order-history.e2e-spec.ts` |
+| **FR-11** | `AC-11.1` .. `AC-11.4` | `POST /api/orders` tính lại giá ở server, tạo `Order` `PENDING` (`reservationStatus = HELD`) trong 1 transaction; cảnh báo nếu giá lệch so với `quotedTotal`. | U, I, E | `orders-create.integration-spec.ts` |
+| **FR-12** | `AC-12.1` .. `AC-12.4` | Quy đổi định mức `ProductIngredient` (S=100%, M=125%, L=150%) + `ToppingIngredient`, trừ `Ingredient.stock` với khóa lạc quan `version`, chống oversell đồng thời, hoàn kho khi `PAYMENT_FAILED`/`CANCELLED`. | U, I | `two-customers.integration-spec.ts` |
+| **FR-13** | `AC-13.1` .. `AC-13.4` | `POST /api/payments` (và VNPay/Stripe Sandbox) lấy `amount = order.total` từ server, thành công lưu `Payment` (`SUCCEEDED`) và chuyển đơn sang `PAID` (`CONSUMED`). | U, I, E | `payments.e2e-spec.ts` |
+| **FR-14** | `AC-14.1` .. `AC-14.4` | Thiếu `Idempotency-Key` trả `400`; gửi lặp cùng key + cùng `requestHash` trả kết quả cũ kèm `Idempotency-Replayed: true`; khác payload trả `409 IDEMPOTENCY_KEY_REUSED`. | U, I | `idempotency.e2e-spec.ts` |
+| **FR-15** | `AC-15.1` .. `AC-15.3` | Thanh toán lỗi chuyển đơn sang `PAYMENT_FAILED` và nhả kho (`RELEASED`); thử lại gọi `prepareRetry` giữ lại kho; giao dịch trễ sau hủy gắn cờ `requiresManualReview = true`. | U, I, E | `vnpay.e2e-spec.ts` |
+| **FR-16** | `AC-16.1` .. `AC-16.2` | Sau khi thanh toán thành công, màn hình `/orders/:id` hiển thị mã đơn `code`, trạng thái `PAID`, tổng tiền và nút điều hướng về menu/lịch sử. | E | `apps/web/src/components/checkout/Checkout.test.ts` |
+| **FR-17** | `AC-17.1` .. `AC-17.3` | `GET /api/orders/me` trả danh sách đơn của chính khách hàng theo thứ tự `createdAt DESC`, hỗ trợ phân trang và lọc `status`. | I, E | `order-history.e2e-spec.ts` |
+| **FR-18** | `AC-18.1` .. `AC-18.2` | Chi tiết snapshot và trạng thái; polling 5 giây là mục tiêu chưa nghiệm thu. | I, E | `order-history.e2e-spec.ts` |
+| **FR-19** | `AC-19.1` .. `AC-19.3` | Hàm `assertTransition` kiểm soát mọi chuyển trạng thái theo `ORDER_TRANSITIONS`; chuyển sai hoặc chuyển từ trạng thái kết thúc trả `409 INVALID_ORDER_TRANSITION`. | U, I | `order-state.e2e-spec.ts` |
+| **FR-20** | `AC-20.1` .. `AC-20.3` | Chủ đơn hủy trước pha chế; hoàn kho/mã một lần; REVERSE chỉ khi đã có EARN. | U, I | `order-transitions.integration-spec.ts` |
+| **FR-21** | `AC-21.1` .. `AC-21.3` | `PATCH /api/orders/:id/status` chỉ cho phép `Role.STAFF` chuyển `PAID → PREPARING → READY → COMPLETED`; `CUSTOMER` gọi trả `403 FORBIDDEN`. | I, E | `admin-staff-regression.e2e-spec.ts` |
+| **FR-22** | `AC-22.1` .. `AC-22.3` | Chỉ FIXED/PERCENT; điều kiện minSubtotal; tăng/hoàn lượt nguyên tử. | U, I | `promotion-rules.e2e-spec.ts` |
+| **FR-23** | `AC-23.1` .. `AC-23.3` | EARN khi COMPLETED đủ điều kiện; PAID chưa có điểm; REVERSE cần EARN trước đó. | U, I | `loyalty.e2e-spec.ts` |
+| **FR-24..26** | `AC-24.1` .. `AC-26.3` | ADMIN quản trị, tạo STAFF và khóa/mở tài khoản qua /api/auth; không đổi role công khai. | U, I | `staff-activation.integration-spec.ts` |
 | **NFR-01..02** | `AC-NFR01.1` .. `AC-NFR02.1` | API đọc p95 < 500 ms, API ghi/thanh toán p95 < 1.000 ms; giao diện menu đạt LCP ≤ 2,5 giây. | M | Benchmark / Lighthouse |
-| **NFR-03..07** | `AC-NFR03.1` .. `AC-NFR07.3` | Bcrypt cost ≥ 10, `JwtAuthGuard` + `RolesGuard`, `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`), Prisma tham số hóa, `.env.example`, `helmet`, CORS, Rate-limit 120 req/phút. | U, I, M | `security-validation.e2e-spec.ts`, `auth.e2e-spec.ts` |
-| **NFR-08..12** | `AC-NFR08.1` .. `AC-NFR12.3` | Responsive 360 px, tối đa 6 màn hình đặt đơn, PWA manifest, `GET /api/health` & `/api/health/ready`, `GlobalExceptionFilter`, `CHECK (stock >= 0)`, transaction nguyên tử. | U, I, E, M | `health.e2e-spec.ts`, `concurrency.e2e-spec.ts` |
+| **NFR-03..07** | `AC-NFR03.1` .. `AC-NFR07.3` | Bcrypt cost ≥ 10, `JwtAuthGuard` + `RolesGuard`, `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`), Prisma tham số hóa, `.env.example`, `helmet`, CORS, Rate-limit 120 req/phút. | U, I, M | `admin-validation.e2e-spec.ts`, `auth.e2e-spec.ts` |
+| **NFR-08..12** | `AC-NFR08.1` .. `AC-NFR12.3` | Responsive 360 px, tối đa 6 màn hình đặt đơn, PWA manifest, `GET /api/health` & `/api/health/ready`, `GlobalExceptionFilter`, `CHECK (stock >= 0)`, transaction nguyên tử. | U, I, E, M | `health.e2e-spec.ts`, `two-customers.integration-spec.ts` |
 | **NFR-13..15** | `AC-NFR13.1` .. `AC-NFR15.2` | `docker compose up --build -d` chạy trọn vẹn 3 service (`db`, `backend`, `frontend`); CI kiểm tra `docs:check`, `api:check`, `lint`, `test`, `build`; log có `correlationId`. | I, E, M | `docker-compose.yml`, `.github/workflows/ci.yml` |
 
 ---
@@ -514,7 +514,7 @@ Bên cạnh các phát biểu chi tiết theo mẫu *Given – When – Then* đ
 | Actor | Mô tả trách nhiệm | Vai trò hệ thống |
 |---|---|---|
 | **Khách hàng (Customer)** | Xem menu, lọc danh mục, xem chi tiết sản phẩm & chọn size/topping, quản lý giỏ hàng, đăng ký, đăng nhập; báo giá, đặt và thanh toán đơn hàng, áp mã khuyến mãi, tích điểm thưởng, xem lịch sử & theo dõi đơn, hủy đơn. | `CUSTOMER` (Tác nhân chính – `Must`) |
-| **Nhân viên quầy (Barista / Staff)** | Đăng nhập, xem hàng đợi pha chế, cập nhật trạng thái đơn đã thanh toán (`PAID → PREPARING → READY → COMPLETED`), hủy đơn tác nghiệp và tra cứu danh sách giao dịch cần đối soát hoàn tiền (`manual-review`). | `STAFF` (Tác nhân phụ – `Should`) |
+| **Nhân viên quầy (Barista / Staff)** | Đăng nhập, xem hàng đợi pha chế, cập nhật trạng thái đơn đã thanh toán (`PAID → PREPARING → READY → COMPLETED`), tra cứu danh sách giao dịch cần đối soát hoàn tiền (`manual-review`). | `STAFF` (Tác nhân phụ – `Should`) |
 | **Quản lý cửa hàng / Nhân viên quản lý (Admin)** | Đăng nhập, quản trị danh mục sản phẩm, công thức nguyên liệu & mã khuyến mãi (`UC-12`), xem thống kê doanh thu, lượt bán & đơn đối soát (`UC-13`), quản lý tài khoản nhân viên & phân quyền (`UC-14`). | `ADMIN` (Mở rộng – `Could`) |
 | **Cổng thanh toán (Mô phỏng / VNPay / Stripe Sandbox)** | Hệ thống ngoài (cổng mô phỏng nội bộ `WALLET`/`CARD` hoặc cổng thử nghiệm **VNPay Sandbox** / **Stripe Test Mode**) xử lý và xác nhận kết quả giao dịch không tiền mặt. | `«hệ thống ngoài»` |
 
@@ -522,7 +522,7 @@ Bên cạnh các phát biểu chi tiết theo mẫu *Given – When – Then* đ
 
 ![Sơ đồ use-case tổng quát của BrewLite](./usecase-brewlite.svg)
 
-> *Nguồn sơ đồ:* `usecase-brewlite.puml` (`docs/diagrams/usecase-overview.puml`), bản kết xuất vector `usecase-brewlite.svg` và ảnh độ phân giải cao `usecase-brewlite.png`.
+> Sơ đồ hiện có: [usecase-brewlite.svg](./usecase-brewlite.svg). SVG là nguồn có thể chỉnh sửa trực tiếp; chưa có bản PlantUML hoặc PNG. Bảng truy vết và mục 5.4 quy định thời điểm phát sinh nghiệp vụ.
 
 ## 5.3 Danh sách Use-case và truy vết sang Yêu cầu chức năng & API
 
@@ -533,12 +533,24 @@ Bên cạnh các phát biểu chi tiết theo mẫu *Given – When – Then* đ
 | **UC-03** | Quản lý giỏ hàng | Khách hàng | Độc lập (Client + Quote) | FR-05, FR-06, FR-07 | `localStorage` + `POST /api/orders/quote` |
 | **UC-04** | Đăng ký tài khoản | Khách hàng | Độc lập | FR-08 | `POST /api/auth/register` |
 | **UC-05** | Đăng nhập (JWT) | Khách hàng, Nhân viên quầy (`STAFF`), Quản lý (`ADMIN`) | Độc lập, đồng thời `«extend»` UC-06 khi khách chưa đăng nhập | FR-09, FR-10 | `POST /api/auth/login`, `GET /api/auth/me` |
-| **UC-06** | **Đặt và thanh toán đơn hàng** *(Use-case trọng tâm – Task 1.3)* | Khách hàng | `«include»` UC-06.1, UC-06.2, UC-06.3; được `«extend»` bởi UC-05, UC-07, UC-08 | FR-10 đến FR-16, FR-19 | `POST /api/orders/quote`, `POST /api/orders`, `POST /api/payments` |
+| **UC-06** | **Đặt và thanh toán đơn hàng** *(Use-case trọng tâm – Task 1.3)* | Khách hàng | `«include»` UC-06.1, UC-06.2, UC-06.3; được `«extend»` bởi UC-05, UC-07; UC-08 diễn ra sau khi hoàn tất pha chế | FR-10 đến FR-16, FR-19 | `POST /api/orders/quote`, `POST /api/orders`, `POST /api/payments` |
 | **UC-07** | Áp mã khuyến mãi | Khách hàng | `«extend»` UC-06 | FR-22 | `GET /api/promotions`, `POST /api/promotions/validate` |
-| **UC-08** | Tích / hoàn điểm thưởng | Khách hàng | `«extend»` UC-06 (khi `PAID`) & UC-10 (khi hủy đơn `PAID`) | FR-23 | `GET /api/loyalty/me`, `GET /api/loyalty/me/entries` |
+| **UC-08** | Tích / hoàn điểm thưởng | Khách hàng | Được kích hoạt khi UC-11 hoàn tất đơn `COMPLETED`; đảo điểm chỉ khi đã có EARN | FR-23 | `GET /api/loyalty/me`, `GET /api/loyalty/me/entries` |
 | **UC-09** | Xem lịch sử và theo dõi đơn | Khách hàng | Độc lập | FR-17, FR-18 | `GET /api/orders/me`, `GET /api/orders/:id` |
-| **UC-10** | Hủy đơn & hoàn kho/điểm | Khách hàng, Nhân viên quầy (`STAFF`) | Độc lập | FR-20 | `POST /api/orders/:id/cancel` |
+| **UC-10** | Hủy đơn & hoàn kho/điểm | Khách hàng (chủ đơn) | Độc lập | FR-20 | `POST /api/orders/:id/cancel` |
 | **UC-11** | Xem hàng đợi và cập nhật trạng thái pha chế | Nhân viên quầy (`STAFF`) | Độc lập | FR-19, FR-21 | `PATCH /api/orders/:id/status` |
-| **UC-12** | Quản trị menu, công thức nguyên liệu và mã khuyến mãi | Quản lý cửa hàng (`ADMIN`) | Mở rộng (`Could`) | FR-24 | `/api/admin/products`, `/api/admin/promotions` |
-| **UC-13** | Xem thống kê doanh thu, lượt bán & đơn cần đối soát | Quản lý cửa hàng (`ADMIN`) | Mở rộng (`Could`) | FR-25 | `GET /api/payments/manual-review`, `GET /api/admin/stats` |
-| **UC-14** | Quản lý tài khoản nhân viên và phân quyền | Quản lý cửa hàng (`ADMIN`) | Mở rộng (`Could`) | FR-26 | `/api/admin/users`, `prisma/seed.ts` |
+| **UC-12** | Quản trị menu, công thức nguyên liệu và mã khuyến mãi | Quản lý cửa hàng (`ADMIN`) | Mở rộng (`Could`) | FR-24 | `/api/auth/admin/products/:id`, `/api/auth/admin/promotions` |
+| **UC-13** | Xem thống kê doanh thu, lượt bán & đơn cần đối soát | Quản lý cửa hàng (`ADMIN`) | Mở rộng (`Could`) | FR-25 | `GET /api/payments/manual-review`, `GET /api/auth/admin/overview` |
+| **UC-14** | Quản lý tài khoản nhân viên và phân quyền | Quản lý cửa hàng (`ADMIN`) | Mở rộng (`Could`) | FR-26 | `/api/auth/staff`, `/api/auth/admin/users/:id/status`, `apps/api/src/seed/seed.ts` |
+
+## 5.4 Luồng UC-06
+
+1. Điều kiện trước: JWT hợp lệ, giỏ có món. UC-06.1 báo giá bằng `POST /api/orders/quote`: đọc giá theo size và topping, kiểm tra mã/kho; chưa giữ nguyên liệu.
+2. UC-06.2 tạo đơn bằng `POST /api/orders` và Idempotency-Key: transaction lưu snapshot giá, giữ lượt mã, trừ kho nguyên liệu và lưu OrderIngredientHold. Thành công: PENDING/HELD; thiếu nguyên liệu: 409 và rollback toàn bộ.
+3. UC-06.3 thanh toán với Idempotency-Key riêng: thành công → PAID/CONSUMED, không trừ kho lần hai, không EARN. Thất bại → PAYMENT_FAILED/RELEASED và hoàn kho/mã đúng một lần.
+4. Thử lại phải qua prepareRetry: PAYMENT_FAILED → PENDING, giữ lại kho/mã bằng transaction theo công thức hiện tại, giữ nguyên snapshot giá. Không có cạnh PAYMENT_FAILED → PAID trực tiếp.
+5. UC-11 tiếp tục PAID → PREPARING → READY → COMPLETED. Chỉ tại COMPLETED mới phát sinh EARN theo FR-23; đây không phải bước cộng điểm bên trong UC-06.3.
+
+Kho nguyên liệu: Product/Topping không có cột stock. Định mức sản phẩm được nhân hệ số size, làm tròn lên từng ly cho GRAM/ML; PIECE giữ nguyên. Topping không nhân hệ số size. Tổng hợp nguyên liệu dùng chung trước cập nhật; nhả kho theo snapshot, không tính lại công thức. PENDING chưa có cơ chế tự hết hạn giữ kho.
+
+Giá sản phẩm, size, topping và trường tiền voucher giới hạn 0..2.000.000.000 VND theo validation tương ứng; PERCENT.value giới hạn theo phần trăm. Khi đổi giá gốc, bất kỳ giá size sau dịch chuyển vượt giới hạn đều trả 400 VALIDATION_ERROR và rollback toàn bộ. Không dùng giới hạn tiền cho stock, số lượt hoặc version.s
