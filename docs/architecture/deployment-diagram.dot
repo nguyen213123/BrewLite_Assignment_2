@@ -1,7 +1,7 @@
 // BrewLite — UML Deployment Diagram (Task 3.2)
 // Tạo lại ảnh:  dot -Tsvg deployment-diagram.dot -o deployment-diagram.svg
 //               dot -Tpng -Gdpi=150 deployment-diagram.dot -o deployment-diagram.png
-// "Render" (nền tảng) và "GHCR" (container registry) là GIẢ ĐỊNH: đổi cho đúng nền tảng nhóm dùng thật.
+// Đích triển khai đã chọn: Render và GHCR. Điền URL/service ID sau khi provision.
 digraph BrewLiteDeployment {
   graph [rankdir=TB, fontname="Arial", fontsize=20, labelloc=t, pad=0.3, nodesep=0.55, ranksep=0.85,
          compound=true, newrank=true, splines=true,
@@ -18,10 +18,10 @@ digraph BrewLiteDeployment {
 
   // ===== PRODUCTION =====
   subgraph cluster_prod {
-    label="PRODUCTION  —  «deployment platform» Render (giả định)"; labelloc=b; labeljust=r; style="rounded,filled"; fillcolor="#F4FBF4"; color="#2E7D32"; penwidth=2.2; fontname="Arial"; fontsize=14;
+    label="PRODUCTION  —  «deployment platform» Render"; labelloc=b; labeljust=r; style="rounded,filled"; fillcolor="#F4FBF4"; color="#2E7D32"; penwidth=2.2; fontname="Arial"; fontsize=14;
 
     edge_node [label="«execution environment»\nPlatform edge / CDN\nChấm dứt TLS · HTTPS :443", fillcolor="#E8F5E9", color="#2E7D32"];
-    platform  [label="«execution environment»\nDeployment platform\nnhận deploy hook · chạy container\npre-deploy: prisma migrate deploy\nhealth check: GET /api/health", fillcolor="#E8F5E9", color="#2E7D32"];
+    platform  [label="«execution environment»\nDeployment platform\nRender API · chạy container theo digest\npre-deploy: prisma migrate deploy\nhealth check: GET /api/health/ready", fillcolor="#E8F5E9", color="#2E7D32"];
 
     web [label="«container» web\nNext.js (SSR + PWA)\nlắng nghe :3000", fillcolor="#E3F2FD"];
     api [label="«container» api\nNestJS (module theo domain)\nlắng nghe :3001", fillcolor="#E3F2FD"];
@@ -37,7 +37,7 @@ digraph BrewLiteDeployment {
 
   // ===== Dịch vụ ngoài =====
   subgraph cluster_ext {
-    label="Dịch vụ thanh toán bên ngoài (sandbox)"; style="rounded,dashed"; color="#7F8C8D"; fontname="Arial"; fontsize=12;
+    label="Tích hợp sandbox tùy cấu hình"; style="rounded,dashed"; color="#7F8C8D"; fontname="Arial"; fontsize=12;
     vnpay  [label="«external system»\nVNPay Sandbox", fillcolor="#F3E5F5", color="#6A1B9A"];
     stripe [label="«external system»\nStripe Sandbox", fillcolor="#F3E5F5", color="#6A1B9A"];
     note_pay [label="Khách được chuyển hướng (HTTPS)\nsang trang thanh toán, rồi quay về\nreturn URL của web (/payments/…-return)", shape=note, fillcolor="#FFFFFF", color="#6A1B9A", fontsize=10];
@@ -48,9 +48,9 @@ digraph BrewLiteDeployment {
     label="CI / CD  —  GitHub"; style="rounded,filled"; fillcolor="#F3F6FB"; color="#2F4B7C"; penwidth=2.2; fontname="Arial"; fontsize=14;
     repo     [label="«repository»\nGitHub repository\nBrewLite_Assignment_2", shape=folder, fillcolor="#FFFFFF"];
     runner   [label="«execution environment»\nGitHub Actions runner\nInstall → Lint → Test → Build\n→ docker build (api, web) → push\n→ deploy → smoke test", fillcolor="#E3F2FD"];
-    ghsec    [label="«configuration»\nGitHub Actions secrets\n(token registry, deploy hook)", shape=folder, fillcolor="#FFF8E1", color="#B7791F"];
-    registry [label="«container registry»\nGHCR (giả định)\nimage tag = commit SHA", fillcolor="#E8EAF6", color="#303F9F"];
-    ci_note  [label="Hiện có: ci.yml (Install → Lint → Test → Build)\nDự kiến Task 5.3: docker build, push registry,\ndeploy, smoke test", shape=note, style="filled,dashed", fillcolor="#FFFFFF", color="#7F8C8D", fontsize=10];
+    ghsec    [label="«configuration»\nGitHub Actions secrets\n(GITHUB_TOKEN, RENDER_API_KEY)", shape=folder, fillcolor="#FFF8E1", color="#B7791F"];
+    registry [label="«container registry»\nGHCR\nimage tag = commit SHA", fillcolor="#E8EAF6", color="#303F9F"];
+    ci_note  [label="ci.yml: lint, PostgreSQL, build, E2E\nrelease.yml: GHCR, Render, smoke HTTPS", shape=note, style="filled,dashed", fillcolor="#FFFFFF", color="#7F8C8D", fontsize=10];
   }
 
   // ===== LOCAL =====
@@ -65,7 +65,7 @@ digraph BrewLiteDeployment {
   edge_node -> web [label="HTTP :3000\n(nội bộ)"];
   edge_node -> api [label="HTTP :3001\n(nội bộ)"];
   api -> db  [label="TCP :5432 (nội bộ)\nPrisma", dir=both];
-  api -> vnpay  [label="HTTPS: hoàn tiền,\ntruy vấn giao dịch"];
+  api -> vnpay  [label="HTTPS: khởi tạo và\nđối soát"];
   api -> stripe [label="HTTPS: thanh toán"];
   stripe -> api [label="HTTPS: webhook\n(qua platform edge)", style=dashed];
 
@@ -86,7 +86,7 @@ digraph BrewLiteDeployment {
   runner -> ci_note [style=dashed, arrowhead=none];
   runner -> registry [label="push image"];
   registry -> platform [label="pull image"];
-  runner -> platform [label="deploy hook (HTTPS)\n+ smoke test", style=dashed];
+  runner -> platform [label="Render API (HTTPS)\n+ đợi live và smoke test", style=dashed];
 
   { rank=same; customer; staff; }
   { rank=same; vnpay; stripe; note_pay; }

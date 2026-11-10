@@ -1,12 +1,12 @@
 # Deployment Diagram — BrewLite (Task 3.2)
 
-Tài liệu này đi kèm sơ đồ triển khai UML của môi trường **production**, có thể hiện ranh giới giữa **Local**, **CI/CD** và **Production**.
+Sơ đồ UML mô tả kiến trúc đích Render + GHCR và ranh giới Local, CI/CD, Production. Workflow phát hành, service ID, digest đang live và URL HTTPS cần được bổ sung trong Sprint 2.
 
 | Tệp | Vai trò |
 | --- | --- |
 | `deployment-diagram.dot` | Mã nguồn sơ đồ (Graphviz) |
 | `deployment-diagram.svg` | Ảnh kết xuất vector, dùng chèn vào tài liệu |
-| `deployment-diagram.png` | Ảnh kết xuất 150 dpi, dùng cho slide hoặc báo cáo Word |
+| `deployment-diagram.png` | Ảnh raster, dùng cho slide hoặc báo cáo Word |
 
 Tạo lại ảnh sau khi sửa `.dot` (cần cài [Graphviz](https://graphviz.org/download/)):
 
@@ -30,12 +30,12 @@ Các đường dẫn `apps/web/Dockerfile`, `apps/api/Dockerfile`, `docker-compo
 | api | container | NestJS theo module/domain, lắng nghe :3001 | Backend | `apps/api/Dockerfile`, `apps/api/src/` |
 | PostgreSQL 17 | database | Dữ liệu nghiệp vụ, nằm trong mạng nội bộ, không public | Cơ sở dữ liệu và migration | `apps/api/prisma/migrations/` |
 | Persistent volume / disk | artifact | Lưu trữ bền vững cho PostgreSQL | Cơ sở dữ liệu | Cấu hình nền tảng |
-| Deployment platform | execution environment | Nhận deploy hook, chạy container, chạy migration trước khi bật bản mới, health check | Quy trình triển khai | `docs/deployment.md` |
+| Deployment platform | execution environment | Nhận yêu cầu qua Render API, chạy container, chạy migration trước khi bật bản mới, health check | Quy trình triển khai | `docs/deployment.md` |
 | Environment variables / Secrets | configuration | Cấu hình và bí mật khi chạy (chỉ ghi tên biến, xem mục 4) | Quản lý cấu hình | `.env.example` (không có giá trị thật) |
 | Platform logs | service | Thu stdout/stderr của container | Logging | Cấu hình nền tảng |
 | GitHub repository | repository | Mã nguồn, Pull Request, tag | Quản lý mã nguồn | Repository `BrewLite_Assignment_2` |
-| GitHub Actions runner | execution environment | Pipeline đầy đủ: Install, Lint, Test, Build, docker build, push, deploy, smoke test. Hiện chỉ có phần CI (Install, Lint, Test, Build); phần còn lại là Task 5.3 | CI/CD | `.github/workflows/ci.yml` (đã có); workflow deploy (dự kiến Task 5.3) |
-| GitHub Actions secrets | configuration | Token registry và deploy hook của CI | CI/CD | Cài đặt repository trên GitHub |
+| GitHub Actions runner | execution environment | CI baseline chạy kiểm tra hợp đồng, lint, test PostgreSQL và build. Sprint 2 bổ sung E2E và Release để đẩy image lên GHCR, deploy Render và smoke test. | CI/CD | [CI hiện có](../../.github/workflows/ci.yml). `.github/workflows/release.yml` dự kiến cho Sprint 2. |
+| GitHub Actions secrets | configuration | `GITHUB_TOKEN` và `RENDER_API_KEY` | CI/CD | Cài đặt repository trên GitHub |
 | Container registry (GHCR) | container registry | Lưu image, tag bằng commit SHA | CI/CD | Cấu hình workflow |
 | Developer machine | device | Chạy `docker-compose` (web, api, db) để phát triển | Môi trường local | `docker-compose.yml`, `.env` (không commit) |
 | VNPay Sandbox | external system | Cổng thanh toán thử nghiệm | Dịch vụ thanh toán | Module thanh toán trong `apps/api/` |
@@ -49,7 +49,7 @@ Các đường dẫn `apps/web/Dockerfile`, `apps/api/Dockerfile`, `docker-compo
 | Platform edge | web | HTTP :3000 | Trong mạng nội bộ |
 | Platform edge | api | HTTP :3001 | Trong mạng nội bộ |
 | api | PostgreSQL | TCP :5432 | Mạng nội bộ, không mở ra Internet |
-| api | VNPay Sandbox | HTTPS | API hoàn tiền và truy vấn giao dịch |
+| api | VNPay Sandbox | HTTPS | Khởi tạo và đối soát giao dịch |
 | api | Stripe Sandbox | HTTPS | API thanh toán |
 | Stripe Sandbox | api | HTTPS (webhook) | Đi qua platform edge |
 | Khách | VNPay / Stripe | HTTPS (redirect) | Chuyển sang trang thanh toán rồi quay về return URL của web |
@@ -57,7 +57,7 @@ Các đường dẫn `apps/web/Dockerfile`, `apps/api/Dockerfile`, `docker-compo
 | GitHub repository | Actions runner | Sự kiện push, tag, PR | Kích hoạt pipeline |
 | Actions runner | Container registry | HTTPS | Đẩy image, tag bằng commit SHA |
 | Container registry | Deployment platform | HTTPS | Nền tảng kéo image |
-| Actions runner | Deployment platform | HTTPS (deploy hook) | Sau đó gọi smoke test |
+| Actions runner | Deployment platform | HTTPS (Render API) | Sau đó gọi smoke test |
 
 ## 3. Ranh giới môi trường
 
@@ -72,12 +72,12 @@ Các đường dẫn `apps/web/Dockerfile`, `apps/api/Dockerfile`, `docker-compo
 Không đặt giá trị thật vào repository hay tài liệu này.
 
 - Chung: `PORT`, `FRONTEND_URL`, `DATABASE_URL`, `JWT_SECRET`
-- VNPay: `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_URL`, `VNPAY_RETURN_URL`, `VNPAY_API_URL`
-- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_RETURN_URL`, `STRIPE_WEBHOOK_SECRET`
+- VNPay: Các biến `VNPAY_*` theo [`apps/api/.env.example`](../../apps/api/.env.example)
+- Stripe: Các biến `STRIPE_*` theo [`apps/api/.env.example`](../../apps/api/.env.example)
 
 ## 5. Health check và log
 
-- Health check: `GET /api/health` (liveness) và `GET /api/health/ready` (database sẵn sàng). Nền tảng dùng chúng sau khi triển khai; nếu thất bại thì dừng và quay về bản trước.
+- Health check: `GET /api/health` (liveness) và `GET /api/health/ready` (database sẵn sàng). Render dùng readiness của API. Workflow kiểm tra cả hai endpoint và dừng khi lỗi. Xem quy trình rollback trong runbook.
 - Log: container ghi ra stdout/stderr, nền tảng thu thập. Không ghi bí mật ra log CI.
 
 ## 6. Đối chiếu yêu cầu Task 3.2
@@ -93,12 +93,6 @@ Không đặt giá trị thật vào repository hay tài liệu này.
 | Secret/env, health check và log | Environment variables / Secrets, health check ở Deployment platform, Platform logs |
 | Ranh giới local, CI và production | Ba khung LOCAL, CI / CD, PRODUCTION |
 
-## 7. Giả định cần xác nhận trước khi nộp
+## 7. Đối chiếu môi trường thật
 
-Đề yêu cầu sơ đồ phản ánh **nền tảng thực tế** nhóm dùng, không chỉ lý thuyết. Các điểm dưới đây là giả định và phải khớp với nhóm:
-
-1. **Nền tảng triển khai**: đang ghi **Render**. Nếu nhóm dùng Railway, Fly.io, Azure, AWS hoặc VPS thì đổi nhãn trong `.dot` (khung PRODUCTION, và các nút có chữ "Render") rồi tạo lại ảnh.
-2. **Container registry**: đang ghi **GHCR** (GitHub Container Registry). Đổi nếu nhóm dùng Docker Hub hay registry khác.
-3. **Staff device**: nếu nhóm không có giao diện nhân viên riêng thì đổi nhãn thành "API client (nhân viên)".
-4. **Next.js gọi API phía server**: nếu web (SSR) gọi api trực tiếp trong mạng nội bộ thì thêm một mũi tên web → api.
-5. Thư mục `.github/workflows/` hiện chỉ có `ci.yml` (Install, Lint, Test, Build). Các bước docker build, đẩy image lên registry, deploy và smoke test thuộc Task 5.3 và đang là thiết kế dự kiến. Cập nhật lại sơ đồ và tài liệu này khi pipeline thật đã chạy.
+Nhóm chọn **Render + GHCR**. Các node thể hiện cấu hình đích, còn URL, service ID, digest đang live và bằng chứng HTTPS sẽ được điền trong [runbook triển khai](../deployment.md). Kiểm tra PostgreSQL tắt truy cập external, API chạy migration và readiness, GHCR giữ digest của bản trước, và workflow chạy smoke test trên đúng phiên bản vừa deploy.
