@@ -1,0 +1,328 @@
+@startuml activity-checkout
+skinparam shadowing false
+skinparam ArrowColor #222222
+skinparam ActivityBorderColor #222222
+skinparam ActivityBackgroundColor #FFFFFF
+skinparam ActivityDiamondBorderColor #222222
+skinparam ActivityDiamondBackgroundColor #FFFFFF
+skinparam swimlaneWidth same
+skinparam wrapWidth 190
+
+title ACTIVITY DIAGRAM - UC-06 ĐẶT VÀ THANH TOÁN ĐƠN HÀNG (XEM MENU → GIỎ HÀNG → ĐẶT ĐƠN → THANH TOÁN → THEO DÕI ĐƠN)
+
+|Khách hàng (Customer)|
+start
+:Mở ứng dụng, xem menu;
+
+|Next.js UI|
+:Gọi GET /products;
+
+|NestJS API|
+:Xử lý GET /products;
+
+|Database (PostgreSQL)|
+:Đọc danh sách Product;
+
+|Next.js UI|
+:Hiển thị menu (loading / empty / error);
+
+|Khách hàng (Customer)|
+repeat
+  :Chọn sản phẩm, size, topping;
+  |Next.js UI|
+  :Tính giá tạm tính, thêm vào giỏ (Zustand);
+  |Khách hàng (Customer)|
+repeat while (Mua thêm?) is (Có) not (Không)
+
+:Xem giỏ hàng, bấm "Thanh toán";
+
+' ===== Kiểm tra đăng nhập (phía server) =====
+|Next.js UI|
+:Gửi JWT để kiểm tra;
+note right: Nhóm: Kiểm tra đăng nhập
+
+|NestJS API|
+:Kiểm tra JWT;
+if (JWT hợp lệ?) then (Có)
+  :JWT hợp lệ;
+else (Không: chưa đăng nhập / JWT hết hạn)
+  :Trả 401 yêu cầu đăng nhập;
+  |Next.js UI|
+  :Hiển thị màn hình đăng nhập;
+  repeat
+    |Khách hàng (Customer)|
+    :Nhập email, mật khẩu, bấm "Đăng nhập";
+    |Next.js UI|
+    :Gọi POST /auth/login;
+    |NestJS API|
+    :Validate định dạng dữ liệu;
+    if (Dữ liệu hợp lệ?) then (Không)
+      :Trả 400 lỗi từng trường;
+      |Next.js UI|
+      :Báo lỗi tại trường tương ứng;
+    else (Có)
+      |Database (PostgreSQL)|
+      :Tìm tài khoản theo email;
+      |NestJS API|
+      :So sánh mật khẩu với hash (bcrypt);
+      if (Thông tin đăng nhập đúng?) then (Không)
+        :Trả 401 sai thông tin đăng nhập;
+        |Next.js UI|
+        :Báo "Email hoặc mật khẩu không đúng";
+      else (Có)
+        |NestJS API|
+        :Phát JWT, trả 200 JWT;
+        |Next.js UI|
+        :Lưu token, chuyển về giỏ hàng (giỏ còn nguyên);
+      endif
+    endif
+  repeat while (Chưa đăng nhập được?) is (Có: nhập lại) not (Không)
+endif
+
+' ===== Hiển thị tổng tiền và áp mã khuyến mãi (trước khi tạo đơn) =====
+|Next.js UI|
+:Tính tổng tiền từ giỏ hàng;
+note right: Nhóm: Hiển thị tổng tiền
+:Hiển thị tổng tiền và phương thức thanh toán (Ví / Thẻ);
+
+|Khách hàng (Customer)|
+if (Có mã khuyến mãi?) then (Có)
+  :Nhập mã khuyến mãi, bấm "Áp dụng";
+note right: Nhóm: Áp mã khuyến mãi
+  |Next.js UI|
+  :Gửi mã khuyến mãi (kèm JWT, giá trị đơn);
+  |NestJS API|
+  :Kiểm tra mã tồn tại và còn hiệu lực;
+  |Database (PostgreSQL)|
+  :Đọc thông tin mã (thời hạn, lượt dùng);
+  |NestJS API|
+  if (Mã tồn tại?) then (Không)
+    :Trả "Mã không hợp lệ";
+    |Next.js UI|
+    :Báo "Mã không hợp lệ", không giảm giá;
+  elseif (Mã còn hạn và còn lượt dùng?) then (Không)
+    |NestJS API|
+    :Trả "Mã hết hạn / hết lượt";
+    |Next.js UI|
+    :Báo lý do, không giảm giá;
+  elseif (Đơn đủ điều kiện giá trị tối thiểu?) then (Không)
+    |NestJS API|
+    :Trả "Chưa đủ điều kiện áp dụng";
+    |Next.js UI|
+    :Báo điều kiện cần đạt, không giảm giá;
+  else (Mã còn hiệu lực)
+    |NestJS API|
+    :Tính số tiền giảm và tổng tiền mới;
+    |Next.js UI|
+    :Hiển thị tổng tiền sau giảm, gắn mã vào đơn;
+    |Khách hàng (Customer)|
+    if (Khách bỏ mã đã áp?) then (Có)
+      |Next.js UI|
+      :Xóa mã khuyến mãi, khôi phục tổng tiền ban đầu;
+    endif
+  endif
+endif
+
+' ===== Tạo đơn hàng (UC-06.1, UC-06.2) =====
+|Khách hàng (Customer)|
+:Chọn phương thức Ví/Thẻ, bấm "Xác nhận trả";
+
+|Next.js UI|
+:Sinh Idempotency-Key (UUID, scope CREATE_ORDER);
+:Gọi POST /orders (giỏ hàng, mã khuyến mãi, JWT, Idempotency-Key);
+note right: Nhóm: Tạo đơn hàng
+
+|NestJS API|
+:Kiểm tra JWT, validate giỏ hàng (1–20 dòng, số lượng 1–20), hash payload (SHA-256);
+:Kiểm tra sản phẩm, size, topping hợp lệ;
+
+|Database (PostgreSQL)|
+:Đọc thông tin, giá sản phẩm/topping và Idempotency-Key (CREATE_ORDER);
+
+|NestJS API|
+if (Key đã có kết quả hoàn tất, cùng payload?) then (Có)
+  :Trả lại đúng kết quả cũ (Idempotency-Replayed: true), không tạo đơn thứ hai;
+  |Next.js UI|
+  :Hiển thị đơn đã tạo trước đó;
+  stop
+elseif (Key đã dùng với payload khác?) then (Có)
+  |NestJS API|
+  :Trả 409 IDEMPOTENCY_KEY_REUSED;
+  |Next.js UI|
+  :Báo lỗi, không tạo đơn;
+  stop
+endif
+
+|NestJS API|
+:Tính lại tổng tiền ở server;
+if (Giỏ hàng hợp lệ?) then (Không)
+  :Trả 400 dữ liệu giỏ hàng không hợp lệ;
+  |Next.js UI|
+  :Báo lỗi, không tạo đơn;
+  stop
+endif
+
+|NestJS API|
+:Mở transaction (BEGIN), ghi Idempotency-Key (CREATE_ORDER, PROCESSING);
+note right: Nhóm: Giữ kho theo nguyên liệu
+
+' --- Giữ kho theo NGUYÊN LIỆU (công thức) + optimistic locking theo version ---
+|Database (PostgreSQL)|
+:Đọc công thức: ProductIngredient (hệ số size S=100%, M=125%, L=150%) và ToppingIngredient;
+
+|NestJS API|
+:Tổng hợp nhu cầu theo từng ingredientId (nhân số lượng từng dòng), sắp xếp ingredientId ASC;
+
+repeat
+  |Database (PostgreSQL)|
+  :Đọc Ingredient.stock và Ingredient.version của từng nguyên liệu cần dùng;
+  |NestJS API|
+  if (Đủ nguyên liệu cho mọi ingredientId?) then (Không)
+    :ROLLBACK (không trừ kho nguyên liệu nào, không tạo đơn);
+    :Trả 409 OUT_OF_STOCK + nguyên liệu/sản phẩm thiếu;
+    |Next.js UI|
+    :Báo sản phẩm hết, giữ nguyên giỏ để điều chỉnh;
+    stop
+  endif
+  |Database (PostgreSQL)|
+  :Trừ có điều kiện (WHERE id AND version AND stock >= cần dùng), tăng version;
+  |NestJS API|
+repeat while (Xung đột version và chưa quá 3 lần?) is (Có: đọc lại, thử lại) not (Không)
+
+if (Vẫn xung đột sau 3 lần hoặc lỗi CSDL?) then (Có)
+  :ROLLBACK;
+  :Trả 409 STOCK_CONFLICT (hoặc lỗi hệ thống);
+  |Next.js UI|
+  :Báo lỗi, giữ nguyên giỏ hàng;
+  stop
+endif
+
+|Database (PostgreSQL)|
+:Lưu Order (PENDING, reservationStatus = HELD), OrderItem, OrderItemTopping, sinh mã đơn;
+note right: Nhóm: Lưu đơn
+:Lưu snapshot OrderIngredientHold (nguyên liệu đã giữ), giữ lượt mã khuyến mãi (usedCount + 1);
+:Idempotency-Key → COMPLETED (lưu httpStatus + response);
+:COMMIT (đơn, giữ kho, lượt mã và key cùng lúc);
+
+|NestJS API|
+:Trả 201 mã đơn (orderNumber), trạng thái PENDING;
+
+' ===== Thanh toán (UC-06.3, idempotent). Mỗi lần thử lại = Idempotency-Key payment mới, giữ nguyên orderId =====
+repeat
+  |Next.js UI|
+  :Gọi POST /payments (orderId, method WALLET/CARD, mockOutcome SUCCESS/FAIL, Idempotency-Key scope PAY_ORDER);
+  |NestJS API|
+  :Kiểm tra JWT, quyền sở hữu đơn, validate DTO, hash payload (SHA-256);
+  |Database (PostgreSQL)|
+  :Đọc Idempotency-Key (PAY_ORDER) và trạng thái đơn;
+  |NestJS API|
+  if (Key đã có kết quả hoàn tất, cùng payload?) then (Có: replay)
+    :Trả lại đúng HTTP status/body cũ (Idempotency-Replayed: true), không thanh toán lần 2;
+    |Next.js UI|
+    :Hiển thị kết quả cũ, rồi GET /orders/{id} để lấy trạng thái hiện tại;
+    stop
+  elseif (Key đã dùng với payload khác?) then (Có)
+    |NestJS API|
+    :Trả 409 IDEMPOTENCY_KEY_REUSED;
+    |Next.js UI|
+    :Báo lỗi yêu cầu thanh toán;
+    stop
+  elseif (Đơn đang PENDING hoặc PAYMENT_FAILED?) then (Không)
+    |NestJS API|
+    :Trả 409 INVALID_STATE_TRANSITION (hoặc ORDER_ALREADY_PAID);
+    |Next.js UI|
+    :Thông báo trạng thái đơn không hợp lệ;
+    stop
+  endif
+  |NestJS API|
+  :Mở transaction, ghi key (PAY_ORDER, PROCESSING), amount = Order.total (lấy từ server);
+  if (Đơn đang PAYMENT_FAILED?) then (Có: thử lại)
+    |Database (PostgreSQL)|
+    :prepareRetry: kiểm tra và giữ lại nguyên liệu theo công thức + lượt mã (RELEASED → HELD);
+    :Ghi OrderIngredientHold mới, đơn PAYMENT_FAILED → PENDING;
+    |NestJS API|
+  endif
+  if (Thử lại nhưng không giữ lại được nguyên liệu hoặc mã?) then (Có)
+    :ROLLBACK, đơn vẫn PAYMENT_FAILED, không tạo Payment mới;
+    :Trả 409 OUT_OF_STOCK / mã hết hiệu lực;
+    |Next.js UI|
+    :Báo không thể thử lại, giữ nguyên giỏ hàng;
+  else (Không: giữ kho OK hoặc đơn PENDING)
+    |NestJS API|
+    :Gửi yêu cầu thanh toán (số tiền, phương thức, mockOutcome);
+    note right: Nhóm: Thanh toán qua cổng mô phỏng
+    |Payment Service (Cổng thanh toán mô phỏng)|
+    :Xử lý thanh toán mô phỏng (in-process, deterministic);
+    if (Mock trả SUCCESS?) then (Có)
+      |Database (PostgreSQL)|
+      :Lưu Payment (SUCCESS: đơn, key, số tiền, phương thức);
+      :Chuyển đơn PENDING → PAID, reservationStatus HELD → CONSUMED;
+      :Idempotency-Key → COMPLETED (lưu HTTP 200 + response);
+      :COMMIT (Payment, trạng thái đơn, kho và key cùng lúc);
+      |NestJS API|
+      :Trả 200 (payment.status = SUCCESS, order.status = PAID);
+      note right: Nhóm: Kết quả thanh toán
+      |Next.js UI|
+      :GET /orders/{id} lấy trạng thái hiện tại, xóa giỏ hàng;
+      :Hiển thị xác nhận đơn (mã đơn, PAID, chi tiết món, tổng tiền, tiến trình pha chế);
+
+      ' ===== Sau xác nhận: xem lịch sử / theo dõi đơn (UC-09) =====
+      |Khách hàng (Customer)|
+      if (Muốn xem lịch sử hoặc theo dõi đơn?) then (Có)
+        |Next.js UI|
+        :Gọi GET /orders/me (createdAt DESC, phân trang, lọc theo trạng thái);
+        note right: Nhóm: Lịch sử và theo dõi đơn
+        |NestJS API|
+        :Trả danh sách đơn của chính khách hàng;
+        |Next.js UI|
+        :Hiển thị lịch sử đơn;
+        |Khách hàng (Customer)|
+        :Chọn đơn cần theo dõi;
+        |Next.js UI|
+        :Gọi GET /orders/{id} (món, topping, tổng tiền, lịch sử thanh toán);
+        |NestJS API|
+        :Trả chi tiết và trạng thái đơn;
+        |Next.js UI|
+        :Hiển thị trạng thái, tự làm mới (polling 5 giây) khi đơn còn hoạt động;
+      else (Không: về menu)
+        |Next.js UI|
+        :Quay lại menu;
+      endif
+      stop
+    else (Mock trả FAIL / quá thời gian chờ)
+      |Database (PostgreSQL)|
+      :Lưu Payment (FAILED, failureReason);
+      :Chuyển đơn PENDING → PAYMENT_FAILED, reservationStatus HELD → RELEASED;
+      :Hoàn kho: cộng trả Ingredient.stock theo snapshot OrderIngredientHold (release);
+      :Hoàn lượt mã khuyến mãi (usedCount - 1), không cộng điểm;
+      :Idempotency-Key → COMPLETED (lưu kết quả FAILED để replay);
+      :COMMIT (Payment, trạng thái đơn, hoàn kho, hoàn lượt mã và key cùng lúc);
+      |NestJS API|
+      :Trả HTTP 200 (payment.status = FAILED, order.status = PAYMENT_FAILED);
+      note right: Nhóm: Kết quả thanh toán
+      |Next.js UI|
+      :Đọc payment.status / order.status (không dựa vào mã HTTP), báo lý do lỗi, giữ nguyên giỏ hàng;
+    endif
+  endif
+  |Khách hàng (Customer)|
+  :Chọn "Thử lại" hoặc "Hủy đơn";
+  |Next.js UI|
+backward :Sinh Idempotency-Key payment mới (có thể đổi phương thức)\ngửi lại POST /payments cùng orderId;
+repeat while (Khách chọn thử lại?) is (Có) not (Không: hủy đơn)
+
+' ===== Hủy đơn sau khi thanh toán thất bại (UC-10) =====
+|Next.js UI|
+:Gọi POST /orders/{id}/cancel;
+|NestJS API|
+:Hủy đơn: Order → CANCELLED;
+|Database (PostgreSQL)|
+if (reservationStatus còn HELD?) then (Có)
+  :Hoàn nguyên liệu, hoàn lượt mã, HELD → RELEASED;
+else (Không: đã RELEASED sau PAYMENT_FAILED)
+  :Không hoàn kho/lượt mã lần hai;
+endif
+|Next.js UI|
+:Thông báo đã hủy đơn;
+stop
+
+@enduml
