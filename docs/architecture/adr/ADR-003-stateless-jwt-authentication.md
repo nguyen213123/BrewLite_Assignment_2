@@ -1,4 +1,4 @@
-# ADR-003: Xác thực Không trạng thái bằng JWT, Mã hóa Bcrypt và Phân quyền RBAC (Customer vs Staff)
+# ADR-003: Xác thực Không trạng thái bằng JWT, Mã hóa Bcrypt và Phân quyền RBAC (Customer, Staff & Admin)
 
 ## 1. Trạng thái (Status)
 **ACCEPTED** (Đã chấp thuận & Áp dụng sản xuất)
@@ -7,7 +7,7 @@
 2026-10-23
 
 ## 3. Bối cảnh & Vấn đề Kỹ thuật (Context & Problem Statement)
-Hệ thống BrewLite phục vụ hai nhóm tác nhân có đặc quyền và trách nhiệm hoàn toàn khác nhau:
+Hệ thống BrewLite phục vụ ba nhóm tác nhân có đặc quyền và trách nhiệm hoàn toàn khác nhau:
 1. **Khách hàng (`CUSTOMER`)**:
    - Đăng ký tài khoản, đăng nhập, quản lý thông tin cá nhân.
    - Chỉ được phép xem lịch sử đơn hàng và chi tiết đơn hàng của **chính mình**. Tuyệt đối không được xem dữ liệu đơn hàng của khách hàng khác.
@@ -16,6 +16,9 @@ Hệ thống BrewLite phục vụ hai nhóm tác nhân có đặc quyền và tr
    - Truy cập danh sách các đơn hàng cần chuẩn bị của quán.
    - Chuyển đổi trạng thái đơn hàng theo quy trình pha chế (`PAID` $\rightarrow$ `PREPARING` $\rightarrow$ `READY` $\rightarrow$ `COMPLETED`).
    - Có thẩm quyền hủy đơn hàng và kích hoạt hoàn tiền khi khách yêu cầu hủy tại quầy hoặc hết nguyên liệu bất khả kháng.
+3. **Quản trị viên hệ thống (`ADMIN`)**:
+   - Quản trị toàn bộ danh mục sản phẩm, cấu hình công thức nguyên liệu kho, danh mục mã khuyến mại và đối soát các giao dịch tài chính toàn hệ thống.
+   - Có thẩm quyền cao nhất, truy cập các dashboard và endpoint quản trị hệ thống (`apps/web/src/app/admin/`, `apps/api/src/modules/auth/admin.controller.ts`).
 
 Thách thức bảo mật đặt ra:
 - **Ngăn chặn rò rỉ dữ liệu chéo (Multi-tenant Data Isolation)**: Nếu khách hàng cố ý thay đổi `orderId` trên thanh URL trình duyệt sang ID của người khác, hệ thống phải xử lý an toàn như thế nào?
@@ -66,7 +69,7 @@ Thách thức bảo mật đặt ra:
 ## 7. Chi tiết triển khai kỹ thuật (Implementation Details)
 
 ### 7.1. Chính sách An toàn Khóa Bí mật (Fail-Fast Policy)
-Tại [`apps/api/src/modules/auth/auth-policy.ts`](../../..//api/src/modules/auth/auth-policy.ts):
+Tại [`apps/api/src/modules/auth/auth-policy.ts`](../../../apps/api/src/modules/auth/auth-policy.ts):
 ```typescript
 export const AUTH_POLICY = Object.freeze({
   algorithm: 'HS256',
@@ -78,7 +81,7 @@ export const AUTH_POLICY = Object.freeze({
 });
 ```
 
-Khi ứng dụng khởi động, [`AuthService.onModuleInit()`](../../..//api/src/modules/auth/auth.service.ts) chủ động kiểm tra khóa:
+Khi ứng dụng khởi động, [`AuthService.onModuleInit()`](../../../apps/api/src/modules/auth/auth.service.ts) chủ động kiểm tra khóa:
 ```typescript
 onModuleInit() {
   const envSecret = process.env.JWT_SECRET;
@@ -104,7 +107,7 @@ onModuleInit() {
   Thông điệp đồng nhất này ngăn chặn kẻ tấn công rà quét xem một email nào đó đã được đăng ký trong hệ thống hay chưa (User Enumeration Defense).
 
 ### 7.3. Bảo vệ Cách ly Dữ liệu Đơn hàng (Multi-tenant Data Isolation)
-Tại [`apps/api/src/modules/orders/order-reader.service.ts`](../../..//api/src/modules/orders/order-reader.service.ts):
+Tại [`apps/api/src/modules/orders/order-reader.service.ts`](../../../apps/api/src/modules/orders/order-reader.service.ts):
 ```typescript
 async findMine(userId: string, orderId: string): Promise<Api.Order> {
   const order = await this.prisma.order.findUnique({
@@ -122,7 +125,7 @@ async findMine(userId: string, orderId: string): Promise<Api.Order> {
 ```
 
 ## 8. Kiểm thử & Xác minh Kiến trúc (Verification)
-Được chứng minh qua bộ kiểm thử E2E độc lập [`apps/api/test/auth.e2e-spec.ts`](../../..//api/test/auth.e2e-spec.ts):
+Được chứng minh qua bộ kiểm thử E2E độc lập [`tests/api/auth.e2e-spec.ts`](../../../tests/api/auth.e2e-spec.ts):
 - Đăng ký trùng email nhận về đúng mã `409 Conflict`.
 - Đăng nhập sai mật khẩu nhận về `401 INVALID_CREDENTIALS`.
 - Sử dụng token giả mạo chữ ký hoặc sửa payload bị `JwtAuthGuard` chặn ngay lập tức với `401 Unauthorized`.

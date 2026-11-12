@@ -64,7 +64,7 @@ Hệ thống đòi hỏi sự cân bằng giữa hai thái cực kỹ thuật:
 
 ## 7. Chi tiết triển khai kỹ thuật (Implementation Details)
 1. **Điều phối tiến trình phát triển**:
-   Tại tệp gốc [`package.json`](../../../), sử dụng thư viện `concurrently` để chạy đồng thời cả API (Port 3001) và Web (Port 3000) với cờ tắt đồng bộ `-k` (Kill other process if one dies):
+   Tại tệp gốc [`package.json`](../../../package.json), sử dụng thư viện `concurrently` để chạy đồng thời cả API (Port 3001) và Web (Port 3000) với cờ tắt đồng bộ `-k` (Kill other process if one dies):
    ```json
    "dev": "concurrently -k -n api,web \"npm --prefix apps/api run start:dev\" \"npm --prefix apps/web run dev\""
    ```

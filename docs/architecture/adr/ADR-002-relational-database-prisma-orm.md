@@ -60,7 +60,7 @@ Hệ sinh thái dữ liệu của chuỗi bán lẻ đồ uống BrewLite sở h
 ## 7. Chi tiết triển khai kỹ thuật (Implementation Details)
 
 ### 7.1. Cấu trúc Lược đồ Cơ sở dữ liệu Cốt lõi
-Tại [`apps/api/prisma/schema.prisma`](../../..//api/prisma/schema.prisma):
+Tại [`apps/api/prisma/schema.prisma`](../../../apps/api/prisma/schema.prisma):
 ```prisma
 model Order {
   id                String            @id @default(uuid()) @db.Uuid
@@ -86,7 +86,7 @@ model Order {
 ```
 
 ### 7.2. Triển khai Mẫu thiết kế Unit of Work
-Để đảm bảo tất cả các tác vụ trong một ca sử dụng (Use Case) hoặc là thành công trọn vẹn hoặc bị hủy bỏ hoàn toàn, hệ thống triển khai [`UnitOfWork`](../../..//api/src/common/database/unit-of-work.ts):
+Để đảm bảo tất cả các tác vụ trong một ca sử dụng (Use Case) hoặc là thành công trọn vẹn hoặc bị hủy bỏ hoàn toàn, hệ thống triển khai [`UnitOfWork`](../../../apps/api/src/common/database/unit-of-work.ts):
 ```typescript
 @Injectable()
 export class UnitOfWork {

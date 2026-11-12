@@ -46,7 +46,7 @@ Trong ngành F&B đồ uống (trà sữa, cà phê), bài toán tồn kho khác
   1. Thêm cột `version Int @default(0)` vào bảng `Ingredient`.
   2. Áp dụng quy trình 2 pha:
      - **Pha 1 - Giữ kho (`HELD`)**: Khi tạo đơn (`PENDING`), hệ thống giữ trước lượng nguyên liệu cần thiết.
-     - **Pha 2 - Trừ kho thực tế (`DEDUCTED`)**: Khi Barista chuyển đơn sang `PREPARING`, lượng giữ kho chính thức được trừ vĩnh viễn.
+     - **Pha 2 - Tiêu thụ giữ kho (`CONSUMED`)**: Khi đơn thanh toán thành công (`PENDING` $\rightarrow$ `PAID`), lượng nguyên liệu đã giữ chuyển sang trạng thái `CONSUMED`.
      - **Giải phóng (`RELEASED`)**: Nếu đơn bị hủy hoặc thanh toán thất bại, nguyên liệu đã giữ được trả nguyên vẹn về kho.
   3. Cập nhật tồn kho nguyên tử bằng câu lệnh SQL điều kiện kiểm tra đồng thời cả lượng tồn và số phiên bản (`version`).
 - **Ưu điểm**:
@@ -78,17 +78,18 @@ model Ingredient {
 }
 
 model OrderIngredientHold {
-  id           String     @id @default(uuid()) @db.Uuid
   orderId      String     @db.Uuid
   ingredientId String     @db.Uuid
-  quantity     Int        // Số lượng nguyên liệu đã giữ
+  amount       Int        // Định lượng nguyên liệu đã giữ
   order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@id([orderId, ingredientId])
 }
 ```
 
 ### 7.2. Thuật toán Giữ kho Nguyên tử (Atomic Stock Holding Algorithm)
-Tại [`apps/api/src/modules/inventory/inventory.service.ts`](../../..//api/src/modules/inventory/inventory.service.ts):
+Tại [`apps/api/src/modules/inventory/inventory.service.ts`](../../../apps/api/src/modules/inventory/inventory.service.ts):
 ```typescript
 async holdStockForOrder(tx: Prisma.TransactionClient, orderId: string, requirements: Map<string, number>): Promise<void> {
   // Sắp xếp ID nguyên liệu tăng dần để loại trừ hoàn toàn nguy cơ deadlock
@@ -123,7 +124,7 @@ async holdStockForOrder(tx: Prisma.TransactionClient, orderId: string, requireme
       data: {
         orderId,
         ingredientId,
-        quantity: qtyNeeded,
+        amount: qtyNeeded,
       },
     });
   }
@@ -131,7 +132,7 @@ async holdStockForOrder(tx: Prisma.TransactionClient, orderId: string, requireme
 ```
 
 ## 8. Kiểm thử & Xác minh Kiến trúc (Verification)
-Được chứng minh qua bộ kiểm thử E2E cực kỳ khắt khe [`apps/api/test/inventory-stock.e2e-spec.ts`](../../..//api/test/inventory-stock.e2e-spec.ts):
+Được chứng minh qua bộ kiểm thử E2E cực kỳ khắt khe [`tests/api/inventory-stock.e2e-spec.ts`](../../../tests/api/inventory-stock.e2e-spec.ts):
 - Bắn đồng thời 20 request tạo đơn tranh mua cùng 1 nguyên liệu chỉ còn đủ cho 3 đơn: Đúng 3 đơn thành công, 17 đơn còn lại bị từ chối với mã lỗi `409 INSUFFICIENT_STOCK`.
 - Tồn kho cuối cùng của nguyên liệu trong cơ sở dữ liệu đạt chuẩn chính xác không bị âm kho (`stock >= 0`).
 - Khi hủy đơn PENDING, toàn bộ nguyên liệu lập tức được hoàn trả về kho chính xác 100%.

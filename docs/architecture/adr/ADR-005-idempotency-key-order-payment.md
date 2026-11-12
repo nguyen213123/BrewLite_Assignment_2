@@ -72,7 +72,7 @@ model IdempotencyKey {
 ```
 
 ### 7.2. Bộ lọc Decorator `@IdempotencyKey()` và Hàm Điều phối Lũy đẳng
-Tại [`apps/api/src/common/security/security.ts`](../../..//api/src/common/security/security.ts):
+Tại [`apps/api/src/common/security/security.ts`](../../../apps/api/src/common/security/security.ts):
 ```typescript
 export const IdempotencyKey = createParamDecorator((_data: unknown, context: ExecutionContext): string => {
   const key = context.switchToHttp().getRequest<Request>().headers['idempotency-key'];
@@ -85,7 +85,7 @@ export const IdempotencyKey = createParamDecorator((_data: unknown, context: Exe
 });
 ```
 
-Tại [`apps/api/src/modules/idempotency/idempotency.service.ts`](../../..//api/src/modules/idempotency/idempotency.service.ts):
+Tại [`apps/api/src/modules/idempotency/idempotency.service.ts`](../../../apps/api/src/modules/idempotency/idempotency.service.ts):
 ```typescript
 async runIdempotent<T>(
   key: string,
@@ -139,6 +139,6 @@ async runIdempotent<T>(
 ```
 
 ## 8. Kiểm thử & Xác minh Kiến trúc (Verification)
-Được chứng minh qua bộ kiểm thử tự động [`apps/api/test/idempotency.e2e-spec.ts`](../../..//api/test/idempotency.e2e-spec.ts):
+Được chứng minh qua bộ kiểm thử tự động [`tests/api/idempotency.e2e-spec.ts`](../../../tests/api/idempotency.e2e-spec.ts):
 - Gửi 10 request tạo đơn song song cùng một lúc với cùng 1 `Idempotency-Key`: Chỉ có duy nhất 1 đơn hàng được tạo trong database, 9 request còn lại nhận về cùng một kết quả đơn hàng đó mà không bị trừ kho 2 lần.
 - Gửi lại cùng `Idempotency-Key` nhưng sửa đổi số lượng hoặc ID sản phẩm: Hệ thống lập tức từ chối với mã lỗi `422 IDEMPOTENCY_CONFLICT`.

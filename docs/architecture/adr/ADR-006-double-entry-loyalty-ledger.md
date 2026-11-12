@@ -64,7 +64,7 @@ Thách thức kỹ thuật đặt ra:
 ## 7. Chi tiết triển khai kỹ thuật (Implementation Details)
 
 ### 7.1. Lược đồ Bảng Sổ cái Điểm thưởng
-Tại [`apps/api/prisma/schema.prisma`](../../..//api/prisma/schema.prisma):
+Tại [`apps/api/prisma/schema.prisma`](../../../apps/api/prisma/schema.prisma):
 ```prisma
 model LoyaltyEntry {
   id        String          @id @default(uuid()) @db.Uuid
@@ -84,7 +84,7 @@ model LoyaltyEntry {
 ```
 
 ### 7.2. Thuật toán Tích điểm & Thu hồi Điểm Sổ cái
-Tại [`apps/api/src/modules/loyalty/loyalty.service.ts`](../../..//api/src/modules/loyalty/loyalty.service.ts):
+Tại [`apps/api/src/modules/loyalty/loyalty.service.ts`](../../../apps/api/src/modules/loyalty/loyalty.service.ts):
 ```typescript
 // 1. TÍCH ĐIỂM KHI HOÀN TẤT ĐƠN HÀNG
 async earn(tx: Prisma.TransactionClient, order: StoredOrder): Promise<number> {
@@ -143,7 +143,7 @@ async reverse(tx: Prisma.TransactionClient, order: StoredOrder): Promise<void> {
 ```
 
 ### 7.3. Đồng bộ Điểm số lên Header và Triệt tiêu Vòng lặp Re-render
-Tại [`apps/web/src/lib/auth.ts`](../../..//web/src/lib/auth.ts):
+Tại [`apps/web/src/lib/auth.ts`](../../../apps/web/src/lib/auth.ts):
 ```typescript
 export function updateUserPoints(points: number): void {
   const current = getUser();
@@ -162,7 +162,7 @@ export function updateUserPoints(points: number): void {
 ```
 
 ## 8. Kiểm thử & Xác minh Kiến trúc (Verification)
-Được chứng minh qua bộ kiểm thử tự động [`apps/api/test/loyalty.e2e-spec.ts`](../../..//api/test/loyalty.e2e-spec.ts):
+Được chứng minh qua bộ kiểm thử tự động [`tests/api/loyalty.e2e-spec.ts`](../../../tests/api/loyalty.e2e-spec.ts):
 - Gọi hàm `earn` 5 lần liên tiếp cho cùng 1 đơn hàng: Số điểm của người dùng chỉ tăng đúng 1 lần duy nhất, bảng `LoyaltyEntry` chỉ có đúng 1 dòng `EARN`.
 - Hủy đơn hàng đã tích điểm: Hệ thống tạo bản ghi `REVERSE` và trừ lại đúng số điểm gốc, không làm âm điểm khách hàng.
 - Kiểm thử phân trang danh sách lịch sử điểm có cùng `createdAt`: Phân trang ổn định tuyệt đối nhờ tiêu chí sắp xếp phụ `orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]`.

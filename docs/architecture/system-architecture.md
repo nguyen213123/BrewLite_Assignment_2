@@ -181,14 +181,14 @@ erDiagram
         string id PK
         string email UK
         string passwordHash
-        string role "CUSTOMER | STAFF"
+        string role "CUSTOMER | STAFF | ADMIN"
         int loyaltyPoints
     }
 
     Ingredient {
         string id PK
         string name
-        string unit "g | ml | piece"
+        string unit "GRAM | ML | PIECE"
         int stock
         int version "Optimistic Lock Counter"
     }
@@ -197,8 +197,8 @@ erDiagram
         string id PK
         string code UK
         string userId FK
-        string status "PENDING | PAID | PREPARING | READY | COMPLETED | CANCELLED"
-        string reservationStatus "HELD | DEDUCTED | RELEASED"
+        string status "PENDING | PAID | PREPARING | READY | COMPLETED | PAYMENT_FAILED | CANCELLED"
+        string reservationStatus "HELD | CONSUMED | RELEASED"
         int subtotal
         int discount
         int total
@@ -224,12 +224,12 @@ Mọi biến đổi trạng thái của đơn hàng bắt buộc phải đi qua 
 
 | Trạng thái hiện tại | Sự kiện kích hoạt | Trạng thái tiếp theo | Điều kiện kiểm tra & Tác vụ phụ |
 | :--- | :--- | :--- | :--- |
-| `PENDING` | Thanh toán thành công | `PAID` | Gateway trả mã giao dịch hợp lệ. Ghi nhận `Payment.status = 'PAID'`. |
+| `PENDING` | Thanh toán thành công | `PAID` | Gateway trả mã giao dịch hợp lệ. Ghi nhận `Payment.status = 'PAID'`. Chuyển `reservationStatus` từ `HELD` $\rightarrow$ `CONSUMED`. |
 | `PENDING` | Thanh toán thất bại | `PAYMENT_FAILED` | Gateway trả lỗi hoặc timeout. Cho phép retry thanh toán. |
 | `PENDING` | Khách hủy đơn | `CANCELLED` | Giải phóng giữ kho nguyên liệu (`RELEASED`). |
 | `PAYMENT_FAILED` | Thử lại thành công | `PAID` | Khách thực hiện thanh toán lại với Idempotency-Key mới. |
 | `PAYMENT_FAILED` | Khách/Hệ thống hủy | `CANCELLED` | Giải phóng giữ kho nguyên liệu (`RELEASED`). |
-| `PAID` | Barista bắt đầu pha chế | `PREPARING` | Yêu cầu quyền `STAFF`. Chuyển tồn kho từ `HELD` $\rightarrow$ `DEDUCTED`. |
+| `PAID` | Barista bắt đầu pha chế | `PREPARING` | Yêu cầu quyền `STAFF`. Barista bắt đầu pha chế. |
 | `PAID` | Hủy đơn sau thanh toán | `CANCELLED` | Yêu cầu quyền `STAFF`. Kích hoạt tự động hoàn tiền Gateway (Auto-refund) và giải phóng kho. |
 | `PREPARING` | Pha chế xong | `READY` | Yêu cầu quyền `STAFF`. Đồ uống sẵn sàng tại quầy. |
 | `READY` | Giao khách hoàn tất | `COMPLETED` | Yêu cầu quyền `STAFF`. Ghi nhận điểm thưởng vào sổ cái Loyalty (`EARN`). |
@@ -331,28 +331,42 @@ sequenceDiagram
             API-->>C: 200 OK { status: 'PAID' } (Client xóa giỏ hàng)
         else Nhánh Mô phỏng THẤT BẠI (FAIL / TIMEOUT)
             MockGW-->>API: { isSuccess: false, error: 'INSUFFICIENT_FUNDS' }
-            API->>DB: Cập nhật Order.status = 'PAYMENT_FAILED'
-            Note over API,DB: Nguyên liệu VẪN ĐƯỢC GIỮ trong OrderIngredientHold
-            API-->>C: 402 Payment Required { status: 'PAYMENT_FAILED' }
+            API->>UOW: Mở transaction xử lý thất bại
+            UOW->>Inv: release(orderId) (Cộng trả lại Ingredient.stock)
+            opt Có mã khuyến mại: UOW->>Promo: release (Giảm Promotion.usedCount)
+            UOW->>DB: UPDATE "Order" SET status = 'PAYMENT_FAILED', reservationStatus = 'RELEASED'
+            UOW->>DB: Tạo Payment (status = 'FAILED')
+            UOW-->>API: Commit giao dịch xử lý thất bại
+            API-->>C: 200 OK { payment: { status: 'FAILED' }, order: { status: 'PAYMENT_FAILED' } }
             
             opt Khách hàng bấm "Thử lại thanh toán" (Retry)
                 C->>API: POST /api/payments (Idempotency-Key mới, orderId)
-                API->>DB: Chuyển Order PAYMENT_FAILED -> PENDING
+                API->>UOW: prepareRetry(orderId)
+                Note over UOW,Inv: Kiểm tra tồn kho theo công thức & kiểm tra quota mã KM
+                UOW->>Inv: reserve (Giữ lại kho nguyên liệu: OrderIngredientHold, stock = stock - qty)
+                opt Có mã KM: UOW->>Promo: reserve (Tăng lại Promotion.usedCount)
+                UOW->>DB: UPDATE "Order" SET status = 'PENDING', reservationStatus = 'HELD', version = version + 1
+                UOW-->>API: Chuẩn bị retry thành công
                 API->>MockGW: Thực hiện lại thanh toán
             end
 
             opt Khách hàng hoặc Hệ thống bấm "Hủy đơn" (Cancel)
                 C->>API: POST /api/orders/:id/cancel
-                API->>Inv: releaseHoldStock(orderId)
-                Inv->>DB: UPDATE "Ingredient" SET stock = stock + qty (Hoàn kho chính xác 100%)
-                API->>DB: Chuyển Order.status = 'CANCELLED', reservationStatus = 'RELEASED'
-                API-->>C: 200 OK { status: 'CANCELLED', message: 'Đã hủy đơn và giải phóng nguyên liệu' }
+                alt Đơn đang ở PENDING (còn HELD)
+                    API->>Inv: release(orderId) (Hoàn trả nguyên liệu)
+                    opt Có mã KM: API->>Promo: release (Hoàn lại lượt dùng mã)
+                    API->>DB: UPDATE "Order" SET status = 'CANCELLED', reservationStatus = 'RELEASED'
+                else Đơn hủy từ PAYMENT_FAILED (đã RELEASED trước đó)
+                    API->>DB: UPDATE "Order" SET status = 'CANCELLED'
+                    Note over API,DB: Đã hoàn kho ở bước thất bại, tuyệt đối không hoàn kho lần 2!
+                end
+                API-->>C: 200 OK { status: 'CANCELLED', message: 'Đã hủy đơn thành công' }
             end
         end
     end
 ```
 
-- **Bảo toàn Snapshot Lịch sử**: Khi đơn ở trạng thái `PAYMENT_FAILED`, nguyên liệu vẫn được giữ trong `OrderIngredientHold`. Khách có thể thử lại thanh toán mà không sợ bị người khác cướp mất nguyên liệu trong lúc đang nhập thẻ.
+- **Cơ chế Hoàn trả & Giữ lại Kho nguyên liệu (`prepareRetry`)**: Khi thanh toán thất bại (`PAYMENT_FAILED`), hệ thống giải phóng ngay lượng nguyên liệu đã giữ về kho khả dụng (`reservationStatus = 'RELEASED'`) và hoàn lại lượt dùng khuyến mại để không giam giữ tồn kho của quán. Khi khách bấm **Thử lại (Retry)**, hàm `prepareRetry` kiểm tra lại tồn kho theo công thức và giữ lại nguyên liệu (`RELEASED -> HELD`) trước khi gọi cổng thanh toán. Nếu đơn bị **Hủy (Cancel)** khi đang ở `PAYMENT_FAILED`, hệ thống chỉ đổi trạng thái sang `CANCELLED` mà tuyệt đối không hoàn kho lần thứ hai (chống hoàn kho đúp).
 - **Khóa lũy đẳng (Idempotency-Key)**: Header `Idempotency-Key` dạng UUIDv4 kết hợp hàm băm SHA-256 bảo đảm dù mạng lag rớt gói tin hoặc khách bấm đúp 2 lần, hệ thống tuyệt đối không bao giờ trừ tiền hay trừ kho hai lần.
 
 ---
@@ -379,14 +393,12 @@ sequenceDiagram
     API->>DB: SELECT * FROM "Order" WHERE status IN ('PAID', 'PREPARING', 'READY')
     DB-->>UI: Danh sách đơn hàng cần phục vụ
 
-    %% PHA 1 -> PHA 2 KHO: CHUYỂN SANG PREPARING
+    %% BƯỚC 1: BẮT ĐẦU PHA CHẾ (PAID -> PREPARING)
     Note over S,UI: BƯỚC 1: BẮT ĐẦU PHA CHẾ (PAID -> PREPARING)
     S->>UI: Bấm "Bắt đầu pha chế"
     UI->>API: PATCH /api/orders/:id/status { status: 'PREPARING' }
     API->>UOW: Mở transaction chuyển trạng thái
-    UOW->>Inv: deductStockForOrder(orderId)
-    Note over Inv,DB: Chuyển tồn kho từ HELD -> DEDUCTED (Kho chính thức bị trừ thực tế)
-    UOW->>DB: UPDATE "Order" SET status = 'PREPARING', reservationStatus = 'DEDUCTED'
+    UOW->>DB: UPDATE "Order" SET status = 'PREPARING'
     UOW-->>API: Commit thành công
     API-->>UI: 200 OK (Đơn chuyển sang PREPARING)
 
@@ -466,6 +478,18 @@ Mọi Pull Request vào nhánh `main` bắt buộc phải vượt qua 5 cổng k
 - **Chính sách khởi động lại (Restart Policy)**: Cấu hình `restart: unless-stopped` trên Docker daemon giúp các container tự động phục hồi khi gặp sự cố Crash hoặc máy chủ khởi động lại.
 - **Tài liệu triển khai chi tiết**: Được mô tả đầy đủ trong Sơ đồ Triển khai Task 3.2 tại [`docs/architecture/deployment-diagram.md`](./deployment-diagram.md).
 
+### 8.6. Môi trường Triển khai Sản xuất (Production Release trên GHCR & Render)
+
+Khớp với tài liệu Sơ đồ Triển khai Task 3.2 ([`docs/architecture/deployment-diagram.md`](./deployment-diagram.md)), quy trình phát hành sản xuất được tự động hóa qua GitHub Container Registry và nền tảng Render:
+
+- **Pipeline Release qua GitHub Actions & GHCR**:
+  - Khi mã nguồn được merge vào nhánh `main` (hoặc gắn release tag), GitHub Actions runner tự động đóng gói Docker image cho `web` và `api`.
+  - Các image được gắn tag theo commit SHA và đẩy lên **GitHub Container Registry (GHCR)**.
+- **Triển khai Production trên Render**:
+  - GitHub Actions gọi deploy hook để kích hoạt nền tảng **Render**.
+  - Render kéo các image mới nhất từ GHCR và khởi chạy 2 container dịch vụ (`web` cổng 3000 và `api` cổng 3001) trong mạng nội bộ riêng (Private Network) kết nối với cơ sở dữ liệu PostgreSQL 17 và đĩa lưu trữ bền vững (Persistent Volume).
+  - Trước khi cho phép lưu lượng truy cập HTTPS (cổng 443) đi vào bản build mới, nền tảng tự động thực thi lệnh `npx prisma migrate deploy` để áp dụng các migration cơ sở dữ liệu và gọi readiness probe tại endpoint `/api/health/ready` nhằm bảo đảm tính sẵn sàng tuyệt đối (Zero-downtime deployment).
+
 ---
 
 ## 9. MA TRẬN ĐÁNH GIÁ ĐẠT CHUẨN YÊU CẦU PHI CHỨC NĂNG (NFR EVALUATION MATRIX)
@@ -484,11 +508,11 @@ Bảng ma trận đối chiếu 100% khớp với danh mục Yêu cầu Phi Ch�
 | **NFR-08** | **Tính khả dụng giao diện (Usability)** | `Must` | Bảng màu Mộc Vị (`#cbe8d3`, `#faf6ec`, `#6d4c3d`), thiết kế Mobile-first responsive, lưu giỏ hàng bền vững qua `localStorage`, lưu phiên checkout an toàn qua `sessionStorage`. | `apps/web/src/app/`, `apps/web/src/components/Header.tsx` | **ĐẠT** (Trải nghiệm mượt mà trên cả máy tính bàn và thiết bị di động) |
 | **NFR-09** | **Hỗ trợ Web lũy tiến (PWA)** | `Should` | Cung cấp Web App Manifest (`manifest.json`), bộ icon chuẩn PWA, cấu hình theme color, hỗ trợ người dùng thêm ứng dụng vào màn hình chính điện thoại. | `apps/web/public/manifest.json` | **ĐẠT** (Có thể cài đặt dạng PWA trên hệ điều hành Android và iOS) |
 | **NFR-10** | **Tương thích trình duyệt** | `Must` | Tuân thủ chuẩn web HTML5/CSS3 và ES2022 JavaScript, tương thích hoàn hảo trên các trình duyệt hiện đại: Chrome, Safari, Firefox, Edge, Samsung Internet. | `docs/qa/issue-4/images/` | **ĐẠT** (Giao diện hiển thị nhất quán trên 100% trình duyệt thử nghiệm) |
-| **NFR-11** | **Tính sẵn sàng và giám sát** | `Must` | Cung cấp endpoint `/api/health` và `/api/health/ready`; Docker healthcheck giám sát container cơ sở dữ liệu; chính sách tự khởi động lại `unless-stopped`. | `apps/api/src/modules/health/`, `docker-compose.yml` | **ĐẠT** (Tự động phục hồi dịch vụ trong vòng < 5 giây sau sự cố) |
+| **NFR-11** | **Tính sẵn sàng và giám sát** | `Must` | Cung cấp endpoint `/api/health` và `/api/health/ready`; Docker healthcheck giám sát container cơ sở dữ liệu; chính sách tự khởi động lại `unless-stopped`. | `apps/api/src/health/`, `docker-compose.yml` | **ĐẠT** (Tự động phục hồi dịch vụ trong vòng < 5 giây sau sự cố) |
 | **NFR-12** | **Toàn vẹn dữ liệu & đồng thời** | `Must` | Mô hình `UnitOfWork` thực thi giao dịch ACID; Khóa lạc quan (OCC với cột `version`) triệt tiêu bán âm kho (Zero-overselling); Khóa lũy đẳng (`Idempotency-Key`) chống gửi trùng. | `adr/ADR-002-relational-database-prisma-orm.md`, `adr/ADR-004-realtime-inventory-concurrency-optimistic-locking.md`, `adr/ADR-005-idempotency-key-order-payment.md`, `tests/api/inventory-stock.e2e-spec.ts`, `tests/api/idempotency.e2e-spec.ts` | **ĐẠT** (Bắn 20 request đồng thời: chính xác 3 đơn mua thành công, 17 đơn từ chối) |
 | **NFR-13** | **Khả năng triển khai** | `Must` | Container hóa độc lập qua Docker multi-stage build; khởi chạy toàn bộ 3 dịch vụ Web, API và Database bằng một lệnh duy nhất `docker compose up --build`. | `apps/web/Dockerfile`, `apps/api/Dockerfile`, `docker-compose.yml` | **ĐẠT** (Thời gian dựng mới toàn bộ hệ thống từ số 0 < 3 phút) |
 | **NFR-14** | **Khả năng kiểm thử & bảo trì** | `Should` | Kiến trúc Hexagonal phân tầng rõ rệt, Type-safe 100% giữa Client và Server qua code generator, bộ kiểm thử tự động toàn diện (Unit, Integration, E2E tests). | `tests/api/`, `adr/ADR-001-monorepo-modular-architecture.md`, `apps/api/tools/generate-api-types.mjs` | **ĐẠT** (Toàn bộ 59 test suites kiểm thử tự động đều PASS 100%) |
-| **NFR-15** | **Ghi log & truy vết tương quan** | `Should` | Structured Logger ghi nhận thông tin request, correlation ID, endpoint, mã lỗi HTTP; truy vết mã giao dịch ngân hàng (`vnp_TxnRef`, Stripe Payment Intent) phục vụ đối soát. | `apps/api/src/common/logging/`, `apps/api/src/modules/payments/vnpay.service.ts` | **ĐẠT** (Dễ dàng tra cứu nguồn gốc lỗi và đối chiếu giao dịch ngân hàng) |
+| **NFR-15** | **Ghi log & truy vết tương quan** | `Should` | Structured Logger ghi nhận thông tin request, correlation ID, endpoint, mã lỗi HTTP; truy vết mã giao dịch ngân hàng (`vnp_TxnRef`, Stripe Payment Intent) phục vụ đối soát. | `apps/api/src/setup.ts`, `apps/api/src/modules/payments/vnpay.service.ts` | **ĐẠT** (Dễ dàng tra cứu nguồn gốc lỗi và đối chiếu giao dịch ngân hàng) |
 | **NFR-16** | **Tính bất biến & đối soát tài chính** | `Must` | Mô hình Sổ cái kép bất biến (Double-entry Ledger) cho điểm thưởng Loyalty (`EARN` / `REVERSE`); Khóa đối soát (Pending Reconciliation Lock) khi hoàn tiền; Đối soát 2 yếu tố VNPay. | `adr/ADR-006-double-entry-loyalty-ledger.md`, `adr/ADR-007-multi-gateway-payment-integration.md`, `tests/api/loyalty.e2e-spec.ts`, `tests/api/vnpay.e2e-spec.ts` | **ĐẠT** (Không thể cộng/trừ lặp điểm, đối soát an toàn 100% giao dịch) |
 
 ---

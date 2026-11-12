@@ -42,9 +42,9 @@ Thách thức kỹ thuật đặt ra:
 - **Mô tả**:
   1. Định nghĩa interface chung `PaymentGatewayPort` tại tầng domain.
   2. Triển khai 3 adapter riêng biệt:
-     - [`MockPaymentGatewayService`](../../..//api/src/modules/payments/mock-payment-gateway.service.ts): Giả lập logic kiểm thử.
-     - [`VnPayService`](../../..//api/src/modules/payments/vnpay.service.ts): Giao tiếp với VNPay Sandbox API (HMAC-SHA512).
-     - [`StripeService`](../../..//api/src/modules/payments/stripe.service.ts): Giao tiếp với Stripe SDK (Checkout Session & Webhook).
+     - [`MockPaymentGatewayService`](../../../apps/api/src/modules/payments/mock-payment-gateway.service.ts): Giả lập logic kiểm thử.
+     - [`VnPayService`](../../../apps/api/src/modules/payments/vnpay.service.ts): Giao tiếp với VNPay Sandbox API (HMAC-SHA512).
+     - [`StripeService`](../../../apps/api/src/modules/payments/stripe.service.ts): Giao tiếp với Stripe SDK (Checkout Session & Webhook).
   3. Phương thức thanh toán Hosted: Chuyển hướng khách hàng sang trang nhập thẻ an toàn của chính VNPay và Stripe.
   4. Xác thực chữ ký số 2 chiều và khóa chờ đối soát khi có sự cố.
 
@@ -72,7 +72,7 @@ export interface PaymentGatewayPort {
 ```
 
 ### 7.2. Xác thực Chữ ký số và Đối soát 2 yếu tố VNPay (Two-Factor Validation)
-Tại [`apps/api/src/modules/payments/vnpay.service.ts`](../../..//api/src/modules/payments/vnpay.service.ts):
+Tại [`apps/api/src/modules/payments/vnpay.service.ts`](../../../apps/api/src/modules/payments/vnpay.service.ts):
 ```typescript
 verifyCallback(query: Record<string, string>): { isSuccess: boolean; orderId: string; message: string } {
   const secureHash = query['vnp_SecureHash'];
@@ -104,7 +104,7 @@ verifyCallback(query: Record<string, string>): { isSuccess: boolean; orderId: st
 ```
 
 ### 7.3. Luồng Tự động Hoàn tiền và Khóa Chờ Đối soát (Reconciliation Lock)
-Khi một đơn hàng đã thanh toán bị hủy, [`PaymentsService.refundPayment()`](../../..//api/src/modules/payments/payments.service.ts) tự động kích hoạt:
+Khi một đơn hàng đã thanh toán bị hủy, [`PaymentsService.refundPayment()`](../../../apps/api/src/modules/payments/payments.service.ts) tự động kích hoạt:
 1. Xác định cổng thanh toán gốc từ bảng `Payment` của đơn hàng (`method = 'VNPAY'` hoặc `'STRIPE'`).
 2. Gửi yêu cầu hoàn tiền đến API của nhà cung cấp.
 3. Nếu cổng thanh toán phản hồi giao dịch đang được đối soát (ví dụ VNPay mã 94, 05, 06):
@@ -114,11 +114,11 @@ Khi một đơn hàng đã thanh toán bị hủy, [`PaymentsService.refundPayme
 
 ## 8. Kiểm thử & Xác minh Kiến trúc (Verification)
 Được chứng minh qua 2 bộ kiểm thử tích hợp chuyên sâu:
-- [`apps/api/test/vnpay.e2e-spec.ts`](../../..//api/test/vnpay.e2e-spec.ts) (**11/11 tests PASS**):
+- [`tests/api/vnpay.e2e-spec.ts`](../../../tests/api/vnpay.e2e-spec.ts) (**11/11 tests PASS**):
   - Phát hiện chữ ký số bị giả mạo hoặc sai lệch tham số.
   - Từ chối ghi nhận khi `ResponseCode == 00` nhưng `TransactionStatus != 00`.
   - Kiểm thử xử lý mã 94, 05, 06 và kích hoạt khóa đối soát thành công.
-- [`apps/api/test/stripe.e2e-spec.ts`](../../..//api/test/stripe.e2e-spec.ts) (**22/22 tests PASS**):
+- [`tests/api/stripe.e2e-spec.ts`](../../../tests/api/stripe.e2e-spec.ts) (**22/22 tests PASS**):
   - Xác thực Webhook signature với khóa luân chuyển (rotated secrets).
   - Tự động hoàn tiền Stripe khi đơn hàng PAID bị hủy.
   - Ngăn chặn hoàn tiền với số tiền âm hoặc bằng 0.
