@@ -1,3 +1,5 @@
+title: "Đặc tả yêu cầu phần mềm (SRS rút gọn) – BrewLite"
+subtitle: "Assignment 2 – Task 1.2 – Yêu cầu chức năng và phi chức năng"
 
 | **Dự án** | BrewLite – ứng dụng đặt cà phê không dùng tiền mặt |
 | **Môn học** | Công nghệ Phần mềm – Trường Đại học Sài Gòn, Khoa CNTT |
