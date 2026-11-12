@@ -28,6 +28,7 @@ export class OrderTransactionsService implements OrderTransactionsPort {
   // all inside the caller's transaction. Two competing transitions both read the same version, but only the first UPDATE
   // matches; the other waits for its commit, re-checks the condition, matches 0 rows and gets ORDER_VERSION_CONFLICT
   // BEFORE any effect (release stock, promo, event) runs. A late request therefore can never overwrite a PAID order.
+  //transition đổi trạng thái đơn và trạng thái giữ kho. prepareRetry giữ lại nguyên liệu khi khách thử thanh toán sau lần thất bại đã xác nhận.
   async transition(
     tx: Tx,
     input: { orderId: string; actorUserId: string; expectedVersion: number; toStatus: Api.OrderStatus },
