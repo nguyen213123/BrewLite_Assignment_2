@@ -70,9 +70,9 @@ export default function MenuPage() {
           </div>
 
           {/* Cột phải: Cụm ly đồ uống chủ đạo & nguyên liệu */}
-          <div className="relative z-10 flex items-end justify-center gap-3 sm:gap-4">
+          <div className="relative z-10 flex items-end justify-center gap-2 sm:gap-4">
             {/* Ly 1: Trà sữa trân châu */}
-            <div className="w-28 -rotate-3 overflow-hidden rounded-2xl border-2 border-white bg-[#efe5d4] p-1.5 shadow-lg sm:w-32">
+            <div className="w-24 -rotate-3 overflow-hidden rounded-2xl border-2 border-white bg-[#efe5d4] p-1.5 shadow-lg sm:w-32">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/tra-sua.jpg"
@@ -85,7 +85,7 @@ export default function MenuPage() {
             </div>
 
             {/* Ly 2 (Chính giữa, cao hơn): Trà đào cam sả */}
-            <div className="z-20 -mb-2 w-32 overflow-hidden rounded-2xl border-3 border-white bg-[#efe5d4] p-2 shadow-xl sm:w-40">
+            <div className="z-20 -mb-2 w-28 overflow-hidden rounded-2xl border-3 border-white bg-[#efe5d4] p-2 shadow-xl sm:w-40">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/tra-dao.jpg"
@@ -98,7 +98,7 @@ export default function MenuPage() {
             </div>
 
             {/* Ly 3: Matcha / Cappuccino */}
-            <div className="w-28 rotate-3 overflow-hidden rounded-2xl border-2 border-white bg-[#efe5d4] p-1.5 shadow-lg sm:w-32">
+            <div className="w-24 rotate-3 overflow-hidden rounded-2xl border-2 border-white bg-[#efe5d4] p-1.5 shadow-lg sm:w-32">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/matcha.jpg"

@@ -1,4 +1,11 @@
 'use client';
+/**
+ * @deprecated
+ * File prototype sơ khai của giai đoạn đầu dự án.
+ * Component chính thức hiện tại của Issue #17 là:
+ * - apps/web/src/components/menu-grid.tsx (MenuGrid)
+ * - apps/web/src/features/products/product-detail-view.tsx (ProductDetailView)
+ */
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';

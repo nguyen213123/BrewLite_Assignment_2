@@ -18,6 +18,13 @@ const choice = (selected: boolean) =>
       : 'border-[#decbb4] bg-[#faf6ec] text-[#4a2e20] hover:border-[#6d4c3d] hover:bg-white'
   }`;
 
+const sizeChoice = (selected: boolean, outOfStock: boolean) =>
+  `flex flex-col items-center justify-center gap-1 rounded-xl border p-2 text-center transition sm:flex-row sm:justify-between sm:gap-2 sm:px-4 sm:py-3 sm:text-left ${
+    selected
+      ? 'border-[#6d4c3d] bg-[#cbe8d3]/55 text-[#4a2e20] shadow-[0_0_0_1px_#6d4c3d]'
+      : 'border-[#decbb4] bg-[#faf6ec] text-[#4a2e20] hover:border-[#6d4c3d] hover:bg-white'
+  } ${outOfStock ? 'opacity-60' : ''}`;
+
 export function ProductDetailView({ product, onAddToCart }: Props) {
   const [size, setSize] = useState<Size | null>(product.sizes[0]?.size ?? null);
   const [toppingIds, setToppingIds] = useState<string[]>([]);
@@ -143,27 +150,30 @@ export function ProductDetailView({ product, onAddToCart }: Props) {
               {product.sizes.length === 0 ? (
                 <p className="text-sm text-[#9b2c2c]">Sản phẩm chưa có kích cỡ để chọn.</p>
               ) : (
-                <div className="grid grid-cols-3 gap-3">
-                  {product.sizes.map((s) => (
-                    <button
-                      key={s.size}
-                      type="button"
-                      aria-pressed={size === s.size}
-                      onClick={() => {
-                        touch();
-                        setSize(s.size);
-                      }}
-                      className={choice(size === s.size)}
-                    >
-                      <b className="text-sm">
-                        Size {s.size}
-                        {s.stock <= 0 ? ' (Hết)' : ''}
-                      </b>
-                      <span className="text-xs font-semibold text-[#6d4c3d]">
-                        {formatVnd(s.price)}
-                      </span>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  {product.sizes.map((s) => {
+                    const isOutOfStock = s.stock <= 0;
+                    return (
+                      <button
+                        key={s.size}
+                        type="button"
+                        aria-pressed={size === s.size}
+                        onClick={() => {
+                          touch();
+                          setSize(s.size);
+                        }}
+                        className={sizeChoice(size === s.size, isOutOfStock)}
+                      >
+                        <b className="text-xs sm:text-sm">
+                          Size {s.size}
+                          {isOutOfStock ? ' (Hết)' : ''}
+                        </b>
+                        <span className="text-[11px] font-semibold text-[#6d4c3d] sm:text-xs">
+                          {formatVnd(s.price)}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </fieldset>
