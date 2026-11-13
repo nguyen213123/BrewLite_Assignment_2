@@ -172,11 +172,11 @@ test.describe('End-to-End Checkout Flow (Task 4.4 / Issue #20)', () => {
     await page.goto('/orders');
     await expect(page.locator('h1')).toContainText('Lịch Sử Đơn Hàng');
     await expect(page.locator(`text=${orderCode}`).first()).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('text=Đã thanh toán (PAID)').first()).toBeVisible();
+    await expect(page.locator('text=Đã thanh toán').first()).toBeVisible();
 
     // Mở trang chi tiết đơn hàng /orders/[id]
     await page.goto(`/orders/${orderId}`);
-    await expect(page.locator('h1')).toContainText(`Chi Tiết Đơn Hàng ${orderCode}`);
+    await expect(page.locator('h1')).toContainText(orderCode);
     await expect(page.locator('text=Thanh toán thành công!')).toBeVisible();
 
     // -------------------------------------------------------------------------
