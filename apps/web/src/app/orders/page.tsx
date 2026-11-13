@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { apiGet, ApiRequestError } from '@/lib/api';
-import { subscribeAuth, getAuthSnapshot, getAuthServerSnapshot, updateUserPoints } from '@/lib/auth';
+import { subscribeAuth, getAuthSnapshot, getAuthServerSnapshot, updateUserPoints, getToken, getUser } from '@/lib/auth';
 import type { LoyaltyBalance, OrderPage, OrderSummary } from '@/lib/contracts/api.generated';
 import OrderStatusBadge from '@/components/OrderStatusBadge';
 import ManualPaymentReview from '@/components/payments/ManualPaymentReview';
@@ -25,10 +25,14 @@ export default function OrdersHistoryPage() {
       return;
     }
 
-    async function loadOrders() {
+    const currentToken = getToken();
+    const currentUserId = user.id;
+
+    async function loadOrders(silent = false) {
+      if (!silent) setLoading(true);
       try {
         const response = await apiGet<OrderPage>(`/orders/me?page=${page}&limit=10`);
-        if (!ignore) {
+        if (!ignore && getToken() === currentToken && getUser()?.id === currentUserId) {
           setOrders(response.data);
           setPage(response.meta.page);
           setTotalPages(response.meta.totalPages);
@@ -36,12 +40,12 @@ export default function OrdersHistoryPage() {
           setError(null);
           apiGet<LoyaltyBalance>('/loyalty/me')
             .then((bal) => {
-              if (!ignore) updateUserPoints(bal.points);
+              if (!ignore && getToken() === currentToken) updateUserPoints(bal.points);
             })
             .catch(() => {});
         }
       } catch (err) {
-        if (!ignore) {
+        if (!ignore && getToken() === currentToken && getUser()?.id === currentUserId) {
           if (err instanceof ApiRequestError) {
             setError(err.message || 'Không thể tải lịch sử đơn hàng.');
           } else {
@@ -49,13 +53,36 @@ export default function OrdersHistoryPage() {
           }
         }
       } finally {
-        if (!ignore) setLoading(false);
+        if (!ignore && !silent) setLoading(false);
       }
     }
 
-    loadOrders();
+    loadOrders(false);
+
+    // Auto-refresh every 5s (FR-17), pause when tab is hidden
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (getToken() !== currentToken || getUser()?.id !== currentUserId) return;
+      loadOrders(true);
+    }, 5000);
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        if (getToken() === currentToken && getUser()?.id === currentUserId) {
+          loadOrders(true);
+        }
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+
     return () => {
       ignore = true;
+      clearInterval(interval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      }
     };
   }, [user, page, refreshToken]);
 

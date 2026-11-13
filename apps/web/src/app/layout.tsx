@@ -1,17 +1,28 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Link from 'next/link';
 import './globals.css';
 import Header from '@/components/Header';
+import OfflineFallbackRegistration from '@/components/OfflineFallbackRegistration';
 
 export const metadata: Metadata = {
   title: 'BrewLite',
   description: 'Đặt đồ uống trực tuyến, tùy chỉnh topping, thanh toán không tiền mặt và tích điểm thưởng.',
+  applicationName: 'BrewLite',
+  icons: { icon: '/icon-192.png', apple: '/icon-192.png' },
+  appleWebApp: { capable: true, title: 'BrewLite', statusBarStyle: 'default' },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#6d4c3d',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="vi">
       <body className="min-h-screen flex flex-col bg-[#faf6ec] text-[#4a2e20]">
+        <OfflineFallbackRegistration />
         <Header />
         <div className="flex-1">{children}</div>
 
