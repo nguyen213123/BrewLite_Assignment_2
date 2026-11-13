@@ -127,7 +127,8 @@ test.describe('End-to-End Checkout Flow (Task 4.4 / Issue #20)', () => {
     });
     expect(failPaymentRes.status()).toBe(200);
     const failResult = await failPaymentRes.json();
-    expect(failResult.status).toBe('FAILED');
+    expect(failResult.payment.status).toBe('FAILED');
+    expect(failResult.order.status).toBe('PAYMENT_FAILED');
 
     // Kiểm tra trạng thái đơn đã chuyển sang PAYMENT_FAILED và giải phóng kho (RELEASED)
     const checkFailedOrder = await request.get(`${apiBaseUrl}/orders/${orderId}`, {
@@ -154,7 +155,8 @@ test.describe('End-to-End Checkout Flow (Task 4.4 / Issue #20)', () => {
     });
     expect(successPaymentRes.status()).toBe(200);
     const successResult = await successPaymentRes.json();
-    expect(successResult.status).toBe('SUCCESS');
+    expect(successResult.payment.status).toBe('SUCCEEDED');
+    expect(successResult.order.status).toBe('PAID');
 
     // Kiểm tra trạng thái đơn đã chuyển sang PAID và kho chuyển sang CONSUMED
     const checkPaidOrder = await request.get(`${apiBaseUrl}/orders/${orderId}`, {
