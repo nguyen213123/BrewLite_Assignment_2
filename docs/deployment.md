@@ -1,124 +1,213 @@
-# Hướng dẫn Đóng gói, CI/CD, Triển khai & Vận hành (Deployment & Operations Runbook) – BrewLite
+# Hướng dẫn Đóng gói, CI/CD, Triển khai và Vận hành – BrewLite
 
-> **Dự án**: BrewLite – Ứng dụng đặt cà phê trực tuyến không dùng tiền mặt  
-> **Hạng mục**: Task 5.1, Task 5.2, Task 5.3 & Task 5.4 – Containerization, CI/CD & Production Delivery  
-> **Sơ đồ triển khai liên quan**: [`docs/architecture/deployment-diagram.md`](architecture/deployment-diagram.md) | [`docs/architecture/deployment-diagram.svg`](architecture/deployment-diagram.svg)  
-> **Kiến trúc hệ thống**: [`docs/architecture/system-architecture.md`](architecture/system-architecture.md)
+> **Hạng mục**: Task 5.2 (docker-compose, health), Task 5.3 (CI/CD), Task 5.4 (triển khai và bàn giao)
+> **Sơ đồ triển khai**: [`architecture/deployment-diagram.md`](architecture/deployment-diagram.md) · [`architecture/deployment-diagram.svg`](architecture/deployment-diagram.svg)
+> **Kiến trúc**: [`architecture/system-architecture.md`](architecture/system-architecture.md)
+
+Tài liệu này phân biệt rõ hai loại nội dung:
+
+- **Đã có trong repository, chạy được ngay**: docker-compose, health check, CI, các script và workflow phát hành.
+- **Cần thiết lập một lần trên Render và GitHub** (mục 6): dịch vụ Render, secret, biến cấu hình. Các bước ở mục 6 và cơ chế "Deploy Hook kèm `imgURL`" (chọn image GHCR cho từng lần deploy) chưa được chạy thử trên tài khoản Render thật vào thời điểm viết tài liệu. Hãy kiểm chứng ở lần triển khai đầu tiên và ghi kết quả vào mục 10; nếu Render hành xử khác, sửa `scripts/deploy-render.mjs` và tài liệu này cho khớp.
 
 ---
 
-## 1. Tổng quan Kiến trúc Triển khai (Deployment Overview)
+## 1. Tổng quan ba môi trường
 
-Hệ thống BrewLite được đóng gói và vận hành xuyên suốt qua 3 môi trường tách biệt:
-1. **Môi trường Local Development (`docker-compose.yml`)**:
-   - Khởi chạy đồng bộ 3 container (`db`: PostgreSQL 17, `api`: NestJS 11 trên cổng `:3001`, `web`: Next.js 16 trên cổng `:3000`) chỉ bằng một lệnh duy nhất.
-   - Tự động kiểm tra sức khỏe cơ sở dữ liệu (`pg_isready`), chạy `prisma migrate deploy` và nạp dữ liệu mẫu (`seed.ts`).
-2. **Môi trường CI/CD (`GitHub Actions` + `GHCR`)**:
-   - Tự động chạy Quality Gate (`docs:check`, `api:check`, `docs:schema`, `prisma:validate`, `lint`, `test` với PostgreSQL 17 service container, `build` và smoke test `/api/health/ready`) trên mọi Pull Request và mỗi lần push vào `main`.
-   - Đóng gói Docker Image multi-stage cho `web` và `api`, gắn thẻ theo commit SHA (`ghcr.io/<owner>/brewlite-api:<sha>`, `ghcr.io/<owner>/brewlite-web:<sha>`) và đẩy lên **GitHub Container Registry (GHCR)**.
-3. **Môi trường Production (`Render` Cloud Platform)**:
-   - Cung cấp HTTPS tự động (`:443`) ở tầng Edge/CDN, điều phối lưu lượng tới dịch vụ `web` (`:3000`) và `api` (`:3001`), kết nối tới PostgreSQL 17 có ổ đĩa lưu trữ bền vững (Persistent Disk) trong mạng nội bộ.
+| Môi trường | Nơi chạy | Thành phần | Cấu hình |
+| --- | --- | --- | --- |
+| **Local** | Máy lập trình viên | `docker-compose.yml`: `db` (PostgreSQL 17, :5432), `backend` (NestJS, :3001), `frontend` (Next.js, :3000) | `.env` cá nhân, không commit |
+| **CI/CD** | GitHub Actions + GHCR | `ci.yml` (kiểm tra chất lượng), `release.yml` (phát hành), `rollback.yml` (quay về bản cũ) | GitHub Secrets/Variables |
+| **Production** | Render | Hai Web Service (`web`, `api`) chạy image từ GHCR, Render PostgreSQL 17 (không public) | Environment Variables trên Render |
 
 ![Sơ đồ triển khai BrewLite](architecture/deployment-diagram.svg)
 
----
-
-## 2. Cấu hình Biến môi trường & Bí mật (Environment Variables & Secrets)
-
-Tuyệt đối không commit tệp `.env` chứa khóa bí mật thật lên Git. Sử dụng tệp mẫu [`.env.example`](../.env.example) ở thư mục gốc khi thiết lập môi trường:
-
-| Tên biến | Dịch vụ sử dụng | Mô tả & Quy tắc bảo mật | Giá trị mẫu (Local / Sandbox) |
-|---|---|---|---|
-| `DATABASE_URL` | `api`, `db` | Chuỗi kết nối PostgreSQL 17 | `postgresql://postgres:postgres@localhost:5432/brewlite?schema=public` |
-| `PORT` | `api` | Cổng lắng nghe HTTP của NestJS API | `3001` |
-| `FRONTEND_URL` | `api` | Origin được phép gọi CORS tới API | `http://localhost:3000` (hoặc URL HTTPS trên Render) |
-| `JWT_SECRET` | `api` | Khóa ký JWT `HS256` (**bắt buộc ≥ 32 ký tự**, kiểm tra fail-fast khi khởi động) | Chuỗi ngẫu nhiên ≥ 32 ký tự |
-| `NEXT_PUBLIC_API_URL` | `web` | Đường dẫn gọi REST API từ trình duyệt | `/api` (hoặc `http://localhost:3001/api`) |
-| `API_INTERNAL_URL` | `web` | Đường dẫn proxy nội bộ từ container `web` sang `api` | `http://api:3001` (trong Docker Compose / Render) |
-| `VNPAY_TMN_CODE` | `api` | Mã Website (Terminal ID) của VNPay Sandbox | Cấu hình theo tài khoản VNPay Sandbox |
-| `VNPAY_HASH_SECRET` | `api` | Khóa bí mật tạo chữ ký `HMAC-SHA512` cho VNPay | Cấu hình theo tài khoản VNPay Sandbox |
-| `VNPAY_URL` | `api` | URL cổng thanh toán VNPay Sandbox | `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html` |
-| `VNPAY_RETURN_URL` | `api` | URL redirect sau khi thanh toán trên VNPay | `http://localhost:3000/payments/vnpay-return` |
-| `STRIPE_SECRET_KEY` | `api` | Secret Key của Stripe Test Mode (`sk_test_...`) | Cấu hình trong `.env` / Render Secret |
-| `STRIPE_WEBHOOK_SECRET` | `api` | Khóa xác thực chữ ký Stripe Webhook (`whsec_...`) | Cấu hình trong `.env` / Render Secret |
+Lưu ý kiến trúc: **trình duyệt gọi API trực tiếp** (qua `NEXT_PUBLIC_API_URL`), container `web` không gọi `api` phía server. Vì vậy `api` phải có URL HTTPS công khai và `FRONTEND_URL` của `api` phải đúng domain `web` (CORS).
 
 ---
 
-## 3. Hướng dẫn Chạy Hệ thống bằng Docker Compose (Task 5.1 & 5.2)
+## 2. Biến môi trường và bí mật (chỉ ghi tên, không ghi giá trị)
 
-### 3.1. Khởi chạy toàn bộ hệ thống bằng 1 lệnh
-Từ thư mục gốc của repository:
+### 2.1. Dịch vụ `api` (Render Environment Variables / `.env` local)
 
-```bash
-cp .env.example .env
-docker compose up --build -d
-```
+| Biến | Bắt buộc | Mô tả |
+| --- | --- | --- |
+| `DATABASE_URL` | Có | Chuỗi kết nối PostgreSQL. Trên Render dùng **Internal Database URL** |
+| `JWT_SECRET` | Có | Khóa ký JWT HS256, **tối thiểu 32 ký tự**; API từ chối khởi động nếu thiếu hoặc ngắn |
+| `PORT` | Có trên Render | Cổng lắng nghe, đặt `3001` (mặc định trong code cũng là 3001) |
+| `FRONTEND_URL` | Có | Origin của `web` cho CORS và URL quay về (ví dụ `https://<web>.onrender.com`) |
+| `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_URL`, `VNPAY_RETURN_URL`, `VNPAY_API_URL` | Khi dùng VNPay | Cấu hình VNPay Sandbox |
+| `STRIPE_SECRET_KEY`, `STRIPE_RETURN_URL`, `STRIPE_WEBHOOK_SECRET` | Khi dùng Stripe | Stripe Test mode; webhook là `POST /api/payments/stripe/webhook` |
 
-### 3.2. Kiểm tra trạng thái các Container và Health Check
-```bash
+Cổng thanh toán mô phỏng `WALLET`/`CARD` (`mockOutcome`) không cần biến môi trường riêng.
+
+### 2.2. Dịch vụ `web`
+
+| Biến | Loại | Mô tả |
+| --- | --- | --- |
+| `NEXT_PUBLIC_API_URL` | **Build-arg** (nhúng lúc build image) | URL API mà trình duyệt gọi, gồm `/api`, ví dụ `https://<api>.onrender.com/api`. Không phải biến chạy: đổi giá trị thì phải build lại image |
+| `PORT` | Biến chạy | Đặt `3000` |
+
+### 2.3. GitHub Actions (Settings → Secrets and variables → Actions)
+
+| Tên | Loại | Dùng cho |
+| --- | --- | --- |
+| `RENDER_API_DEPLOY_HOOK` | Secret | URL Deploy Hook của dịch vụ `api` (chứa khóa) |
+| `RENDER_WEB_DEPLOY_HOOK` | Secret | URL Deploy Hook của dịch vụ `web` |
+| `RENDER_API_KEY` | Secret (tuỳ chọn) | Cho phép pipeline chờ deploy chuyển sang `live` qua Render API. Không có thì chỉ dựa vào smoke test |
+| `PRODUCTION_API_URL` | Variable | URL API gồm `/api`, **dùng cho cả build-arg và smoke test** |
+| `PRODUCTION_WEB_URL` | Variable | URL web, dùng cho smoke test |
+
+`GITHUB_TOKEN` có sẵn, dùng để push image lên GHCR (workflow đã khai báo `packages: write`). Hãy tạo **Environment** tên `production` (Settings → Environments) để có thể thêm bước duyệt thủ công nếu cần.
+
+Không có secret nào nằm trong repository. Script triển khai không in URL hook hoặc API key ra log.
+
+---
+
+## 3. Chạy local bằng Docker Compose (Task 5.2)
+
+```powershell
+Copy-Item .env.example .env      # rồi đặt JWT_SECRET (>= 32 ký tự), SEED_ADMIN_PASSWORD, SEED_STAFF_PASSWORD
+docker compose up --build -d --wait
 docker compose ps
-curl http://localhost:3001/api/health
-curl http://localhost:3001/api/health/ready
 ```
-- `GET /api/health`: Kiểm tra tiến trình API đang sống (Liveness probe) → trả `200 OK` (`{ "status": "ok" }`).
-- `GET /api/health/ready`: Thực thi `SELECT 1` kiểm tra kết nối thực tế tới PostgreSQL 17 (Readiness probe) → trả `200 OK` khi DB sẵn sàng, hoặc `503 Service Unavailable` nếu DB mất kết nối.
 
-### 3.3. Truy cập ứng dụng và Tài khoản Demo (tạo tự động bởi `seed.ts`)
-- **Giao diện Web (Next.js)**: `http://localhost:3000`
-- **Backend REST API (NestJS)**: `http://localhost:3001/api`
-- **Tài khoản mẫu sau khi chạy seed**:
-  - **Khách hàng (`CUSTOMER`)**: `customer@brewlite.local` / `Customer@123`
-  - **Nhân viên quầy (`STAFF`)**: `staff@brewlite.local` / `Staff@123456`
-  - **Quản trị viên (`ADMIN`)**: `admin@brewlite.local` / `Admin@123456`
+Với database mới, nạp dữ liệu mẫu (container `backend` đã tự chạy migration khi khởi động):
 
-### 3.4. Dừng hệ thống
+```powershell
+docker compose exec -T backend npm run build:seed
+docker compose exec -T backend npm run seed
+```
+
+Kiểm tra:
+
+```powershell
+curl http://localhost:3001/api/health          # liveness  -> {"status":"ok","service":"brewlite-api"}
+curl http://localhost:3001/api/health/ready    # readiness -> {"status":"ok","database":"connected"} hoặc 503 nếu mất DB
+```
+
+- Web: `http://localhost:3000`, API: `http://localhost:3001/api`.
+- Tài khoản seed: **`admin@gmail.com`** (ADMIN) và **`staff@brewlite.local`** (STAFF), mật khẩu là giá trị bạn đặt ở `SEED_ADMIN_PASSWORD` / `SEED_STAFF_PASSWORD`. **Không có mật khẩu mặc định** và không seed sẵn khách hàng: đăng ký khách tại `/register`.
+- Seed đặt lại tồn kho và lượt dùng mã khuyến mãi về giá trị demo; chỉ chạy trên database demo.
+- Dừng: `docker compose down` (giữ dữ liệu) hoặc `docker compose down -v` (xóa volume).
+
+---
+
+## 4. Kiểm thử
+
+| Lệnh | Nội dung |
+| --- | --- |
+| `npm run lint` | ESLint cho `apps/api`, `tests/api`, `apps/web` (`--max-warnings 0`) |
+| `npm test` | Unit/integration backend và frontend |
+| `npm run test:db` | Toàn bộ suite với PostgreSQL tạm riêng (cần Docker) |
+| `npm run test:tools` | Test các script triển khai (`scripts/`), không cần mạng hay thư viện ngoài |
+| `npm run docs:check`, `npm run api:check` | Hợp đồng OpenAPI và kiểu dữ liệu sinh tự động |
+
+Idempotency của thanh toán (`POST /api/payments`) được kiểm chứng ở [`requirements/idempotency-acceptance.md`](requirements/idempotency-acceptance.md): replay cùng key và payload trả kết quả cũ với `Idempotency-Replayed: true` **trước** khi kiểm tra đơn đã `PAID`; cùng key khác payload trả `409 IDEMPOTENCY_KEY_REUSED`; đơn `PAYMENT_FAILED` thanh toán lại bằng key mới đi qua `prepareRetry` (giữ lại kho và lượt mã).
+
+---
+
+## 5. Pipeline CI/CD (Task 5.3)
+
+```
+Push/Tag → Quality Gate (Lint, Test, Build, E2E) → Build Docker image → Push GHCR → Deploy Render → Smoke test
+```
+
+| Workflow | Kích hoạt | Việc làm |
+| --- | --- | --- |
+| [`ci.yml`](../.github/workflows/ci.yml) | Pull Request, push vào `main`, hoặc được `release.yml` gọi | Cài đặt, `docs:check`, `api:check`, kiểm tra Prisma, `prisma migrate deploy` trên PostgreSQL 17, lint, test, `test:tools`, build, smoke test `/api/health/ready`; **seed + Playwright E2E** khi repo có `tests/e2e/playwright.config.ts` |
+| [`release.yml`](../.github/workflows/release.yml) | Push tag `vX.Y.Z` hoặc chạy tay | (1) gọi lại `ci.yml` làm Quality Gate; (2) build và push image `brewlite-api`, `brewlite-web` lên GHCR, tag theo **commit SHA** và theo phiên bản; (3) gọi Deploy Hook Render bằng secret, chờ deploy `live` (nếu có `RENDER_API_KEY`); (4) smoke test HTTPS Web + API health + Catalog |
+| [`rollback.yml`](../.github/workflows/rollback.yml) | Chạy tay, nhập `image_tag` | Deploy lại image cũ từ GHCR, rồi smoke test |
+
+Pipeline dừng ở bước đầu tiên thất bại; nếu Quality Gate lỗi thì không có image nào được build, nếu smoke test lỗi thì job báo lỗi kèm hướng dẫn rollback. Bước E2E trình duyệt chỉ chạy khi nhóm đã thêm cấu hình Playwright (Issue #20); chưa có thì bước tự bỏ qua, không làm CI hỏng.
+
+**Migration an toàn**: `prisma migrate deploy` chạy **bên trong môi trường Render**, qua Internal Database URL, không chạy từ runner CI (database production không public). Mặc định container `api` chạy `npm run prisma:deploy && npm start` khi khởi động (`apps/api/Dockerfile`); có thể chuyển sang Pre-Deploy Command của Render nếu gói dịch vụ hỗ trợ. Render chỉ chuyển traffic sang bản mới khi health check `/api/health/ready` đạt.
+
+Script hỗ trợ:
+
+- [`scripts/deploy-render.mjs`](../scripts/deploy-render.mjs): gọi Deploy Hook kèm `imgURL`, thứ tự `api` rồi `web`, chờ `live`.
+- [`scripts/smoke-production.mjs`](../scripts/smoke-production.mjs): kiểm tra web (HTTPS), `/health`, `/health/ready` (database `connected`), `/products` (catalog không rỗng); thử lại tối đa 5 phút để chịu được khởi động chậm.
+- Test: [`tests/tools/deploy-render.test.mjs`](../tests/tools/deploy-render.test.mjs).
+
+---
+
+## 6. Thiết lập Render và GitHub lần đầu
+
+Thực hiện một lần, theo thứ tự. Các bước trên giao diện Render có thể khác chút theo phiên bản giao diện; nếu khác, ưu tiên mô tả trong tài liệu Render.
+
+1. **Render PostgreSQL 17**: New → PostgreSQL, chọn phiên bản 17, đặt tên `brewlite-db`, chọn gói. Chép **Internal Database URL** (không dùng External URL, và không mở IP truy cập từ ngoài).
+2. **Cho phép Render kéo image GHCR**: package GHCR mới tạo mặc định là private. Chọn một trong hai: đặt package `brewlite-api` và `brewlite-web` ở chế độ Public, hoặc thêm credential GHCR (username GitHub + Personal Access Token chỉ có quyền `read:packages`) vào Render (Account Settings → Registry Credentials).
+3. **Phát hành lần đầu để có image**: tạo hai Repository variable (`PRODUCTION_API_URL`, `PRODUCTION_WEB_URL`) bằng URL dự kiến của hai dịch vụ, rồi chạy `release.yml` một lần (có thể thất bại ở bước deploy vì chưa có hook; bước build/push vẫn tạo được image lên GHCR).
+4. **Dịch vụ `api`**: New → Web Service → *Existing image* → `ghcr.io/<owner>/brewlite-api:<tag>`. Đặt Environment Variables theo mục 2.1 (`DATABASE_URL` = Internal URL, `JWT_SECRET`, `PORT=3001`, `FRONTEND_URL`, các khóa VNPay/Stripe). Health Check Path: `/api/health/ready`.
+5. **Dịch vụ `web`**: New → Web Service → *Existing image* → `ghcr.io/<owner>/brewlite-web:<tag>`, `PORT=3000`, Health Check Path: `/`.
+6. **Deploy Hook**: ở trang từng dịch vụ (Settings → Deploy Hook) chép URL, lưu vào GitHub Secrets `RENDER_API_DEPLOY_HOOK` và `RENDER_WEB_DEPLOY_HOOK`. Tuỳ chọn: tạo API Key trong Render Account Settings và lưu `RENDER_API_KEY`.
+7. **Cập nhật URL thật**: nếu domain `*.onrender.com` khác dự kiến, sửa hai Repository variable cho khớp, rồi sửa `FRONTEND_URL` của `api`. Do `NEXT_PUBLIC_API_URL` được nhúng lúc build, image `web` phải được build lại bằng lần phát hành tiếp theo.
+8. **Nạp dữ liệu mẫu một lần** (catalog rỗng sẽ làm smoke test thất bại): dùng Shell của dịch vụ `api` trên Render nếu gói có hỗ trợ (`npm run build:seed && npm run seed`, cần đặt `SEED_ADMIN_PASSWORD`, `SEED_STAFF_PASSWORD`); nếu không, tạm thời cho phép IP máy bạn truy cập database, chạy seed từ máy với External Database URL, rồi **gỡ lại quyền truy cập ngay**. Không chạy seed trên database đã có dữ liệu thật vì seed đặt lại tồn kho demo.
+9. **Webhook Stripe** (nếu dùng): tạo endpoint `https://<api>.onrender.com/api/payments/stripe/webhook` trong Stripe Dashboard (Test mode), chép signing secret vào `STRIPE_WEBHOOK_SECRET`. Đặt `VNPAY_RETURN_URL` và `STRIPE_RETURN_URL` về domain `web` thật.
+
+---
+
+## 7. Phát hành một phiên bản
+
 ```bash
-# Dừng các container nhưng giữ lại dữ liệu PostgreSQL trong volume
-docker compose down
+git checkout main && git pull
+git tag v1.0.0
+git push origin v1.0.0
+```
 
-# Dừng và xóa sạch volume dữ liệu để khởi tạo lại từ đầu
-docker compose down -v
+Theo dõi tab **Actions**: `quality` → `images` → `deploy`. Khi xong, trang tóm tắt của job `deploy` ghi commit, image đã triển khai và nhắc cách rollback. Tạo GitHub Release từ tag và dán nội dung từ [`release-notes.md`](release-notes.md).
+
+Kiểm tra thủ công (thay URL thật):
+
+```bash
+curl -f https://<api>.onrender.com/api/health
+curl -f https://<api>.onrender.com/api/health/ready
+curl -f https://<api>.onrender.com/api/products
+curl -fI https://<web>.onrender.com/
 ```
 
 ---
 
-## 4. Quy trình CI/CD với GitHub Actions & GHCR (Task 5.3)
+## 8. Rollback
 
-Pipeline tự động tại [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) thực thi các cổng kiểm soát chất lượng (Quality Gates) theo đúng trình tự:
+Rollback đổi lại image đang chạy; **không** hoàn tác migration đã áp dụng.
 
-1. **Checkout & Cài đặt phụ thuộc (`npm ci`, `npm run setup`)**: Sử dụng Node.js 24 và bộ nhớ đệm npm.
-2. **Kiểm tra hợp đồng OpenAPI & Schema Prisma**:
-   - `npm run docs:check`: Xác thực cú pháp OpenAPI 3.0 (`docs/api/openapi.yaml`) và toàn bộ ví dụ JSON (`docs/api/examples.json`).
-   - `npm run api:check`: Đảm bảo tệp kiểu dữ liệu sinh tự động (`api.generated.ts`) ở cả `apps/api` và `apps/web` khớp 100% với hợp đồng OpenAPI.
-   - `npm run docs:schema`: Xác thực lược đồ Prisma tham chiếu (`docs/diagrams/schema.prisma`).
-3. **Áp dụng Migration & Khởi tạo dữ liệu trên PostgreSQL 17 thật**:
-   - Chạy `prisma migrate deploy` trên dịch vụ PostgreSQL 17 trong GitHub Actions runner.
-4. **Kiểm tra tĩnh & Chạy toàn bộ bộ kiểm thử (`Lint & Test`)**:
-   - `npm run lint` (`--max-warnings 0` cho cả `apps/api`, `tests/api` và `apps/web`).
-   - `RUN_DB_TESTS="1" npm test`: Chạy toàn bộ Unit Test, Integration Test (gồm kiểm thử đặt hàng đồng thời & idempotency) và E2E API Test.
-5. **Biên dịch Production (`npm run build`) & Smoke Test (`/api/health/ready`)**:
-   - Build bản production cho cả Backend và Frontend, khởi chạy thử máy chủ API và xác minh `GET /api/health/ready` trả `200 OK` trước khi cho phép merge hoặc phát hành.
+1. Xác định bản ổn định trước: mở trang tóm tắt của lần `release.yml` thành công liền trước (có commit SHA), hoặc trang Packages của repository trên GitHub.
+2. Chạy **Actions → Rollback → Run workflow**, nhập `image_tag` là commit SHA đó. Workflow deploy lại `ghcr.io/<owner>/brewlite-api:<sha>` và `ghcr.io/<owner>/brewlite-web:<sha>`, rồi chạy smoke test.
+3. Cách thủ công khi Actions không dùng được: trên Render, vào từng dịch vụ → Manual Deploy → *Deploy an existing image*, nhập tag cũ; hoặc gọi lại Deploy Hook kèm `&imgURL=ghcr.io/<owner>/brewlite-api:<sha>`.
+4. Xác minh bằng các lệnh `curl` ở mục 7.
+
+Rollback theo **digest** (bất biến hơn tag): nếu cần, dùng `ghcr.io/<owner>/brewlite-api@sha256:<digest>` (digest lấy ở trang package trên GHCR) thay cho tag.
+
+**An toàn migration**: migration phải tương thích ngược (thêm cột/bảng trước, chỉ xóa cột sau khi bản trước không còn dùng) để image cũ vẫn chạy được trên schema mới. Nếu một migration phá vỡ tương thích, rollback image không đủ: cần khôi phục dữ liệu từ bản sao lưu của Render PostgreSQL.
 
 ---
 
-## 5. Quy trình Triển khai Production, Giám sát & Rollback (Task 5.4)
+## 9. Giám sát và xử lý sự cố
 
-### 5.1. Quy trình Triển khai lên Production (Render)
-1. Khi nhánh `main` vượt qua toàn bộ bước kiểm tra của GitHub Actions, Docker image của `api` và `web` được build theo kiến trúc **Multi-stage Dockerfile** ([`apps/api/Dockerfile`](../apps/api/Dockerfile), [`apps/web/Dockerfile`](../apps/web/Dockerfile)) với người dùng không đặc quyền (`USER node`) và đẩy lên **GHCR** với tag bất biến theo commit SHA.
-2. Dịch vụ Backend trên Render thực thi lệnh khởi động an toàn:
-   ```bash
-   npx prisma migrate deploy && node dist/main.js
-   ```
-3. Render kiểm tra endpoint `/api/health/ready`. Chỉ khi endpoint này trả về `200 OK`, lưu lượng HTTPS mới được chuyển từ container phiên bản cũ sang container phiên bản mới (**Zero-downtime deployment**).
+- **Log**: Render Dashboard → dịch vụ → Logs (stdout/stderr). Log CI không chứa secret.
+- **Health**: `/api/health` (tiến trình sống), `/api/health/ready` (database kết nối được; 503 khi mất DB).
+- Lỗi thường gặp:
 
-### 5.2. Quy trình Rollback khi Phát hiện Sự cố (Rollback Procedure)
-Nếu bước Smoke Test sau triển khai thất bại hoặc phát hiện lỗi nghiêm trọng trên môi trường Production:
-1. **Rollback tự động ở tầng Health Check**: Nếu container mới không vượt qua `/api/health/ready` trong thời gian quy định, nền tảng triển khai tự động hủy đợt phát hành và giữ nguyên container của bản ổn định liền trước.
-2. **Rollback chủ động theo Image Tag / Commit SHA**:
-   - Trong bảng điều khiển dịch vụ trên Render (hoặc thông qua Deploy Hook), chọn lại image tag ứng với commit SHA ổn định liền trước trên GHCR (`ghcr.io/nguyen213123/brewlite-api:<previous-sha>` và `ghcr.io/nguyen213123/brewlite-web:<previous-sha>`).
-   - Xác minh lại trạng thái hệ thống sau khi rollback bằng:
-     ```bash
-     curl -f https://<production-domain>/api/health/ready
-     curl -f https://<production-domain>/api/products
-     ```
-3. **An toàn Migration khi Rollback**: Các bản ghi migration trong `apps/api/prisma/migrations/` tuân thủ nguyên tắc tương thích ngược (Expand-and-Contract), không xóa cột đang được phiên bản liền trước sử dụng.
+| Hiện tượng | Nguyên nhân thường gặp | Cách xử lý |
+| --- | --- | --- |
+| `images` lỗi ở bước kiểm tra biến | Chưa đặt `PRODUCTION_API_URL` (HTTPS) | Đặt Repository variable |
+| Render không kéo được image | Package GHCR private, chưa có credential | Mục 6 bước 2 |
+| `api` không khởi động | `JWT_SECRET` ngắn hơn 32 ký tự, hoặc `DATABASE_URL` sai | Xem log; sửa biến |
+| Trình duyệt báo lỗi CORS | `FRONTEND_URL` không khớp domain `web` | Sửa `FRONTEND_URL`, deploy lại `api` |
+| Web gọi sai API | Image `web` build với `NEXT_PUBLIC_API_URL` cũ | Sửa `PRODUCTION_API_URL`, phát hành lại |
+| Smoke test báo catalog rỗng | Chưa seed database production | Mục 6 bước 8 |
+| Smoke test chờ lâu rồi lỗi | Render đang khởi động chậm hoặc deploy lỗi | Xem Logs; cân nhắc rollback |
+
+---
+
+## 10. Bàn giao (Task 5.4): điền sau khi triển khai thật
+
+| Hạng mục | Giá trị |
+| --- | --- |
+| URL web (HTTPS) | _chưa điền_ |
+| URL API | _chưa điền_ |
+| Health check | `<URL API>/health/ready` |
+| Phiên bản/tag phát hành | _chưa điền_ |
+| Link lần chạy `release.yml` thành công | _chưa điền_ |
+| Link lần pipeline phát hiện lỗi (minh chứng) | _chưa điền_ |
+| Video demo, Sprint Review, Retrospective | _chưa điền_ (xem [`sprints/`](sprints/)) |

@@ -1,0 +1,124 @@
+name: Release
+
+# Push tag vX.Y.Z (hoặc chạy tay) → Quality Gate → build image → push GHCR → deploy Render → smoke test.
+# Pipeline dừng ở bước đầu tiên thất bại. Cách rollback: xem .github/workflows/rollback.yml và docs/deployment.md.
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    # Lint, test (PostgreSQL thật), build, smoke API và E2E: dùng lại đúng workflow CI.
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  images:
+    name: Build và push image lên GHCR
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+      api_image: ${{ steps.meta.outputs.api_image }}
+      web_image: ${{ steps.meta.outputs.web_image }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tính tên và tag image
+        id: meta
+        shell: bash
+        run: |
+          owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          tag="${GITHUB_SHA}"   # tag bất biến theo commit SHA
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then version="${GITHUB_REF_NAME}"; else version="manual-${GITHUB_RUN_NUMBER}"; fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "api_image=ghcr.io/${owner}/brewlite-api" >> "$GITHUB_OUTPUT"
+          echo "web_image=ghcr.io/${owner}/brewlite-web" >> "$GITHUB_OUTPUT"
+      - name: Kiểm tra biến cấu hình production
+        shell: bash
+        env:
+          PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
+        run: |
+          case "$PRODUCTION_API_URL" in
+            https://*) ;;
+            *) echo "::error::Repository variable PRODUCTION_API_URL phải là URL HTTPS của API (gồm /api)"; exit 1 ;;
+          esac
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build và push image api
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/api
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.api_image }}:${{ steps.meta.outputs.tag }}
+            ${{ steps.meta.outputs.api_image }}:${{ steps.meta.outputs.version }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Build và push image web
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/web
+          push: true
+          # NEXT_PUBLIC_API_URL được nhúng lúc build: image web phải dựng riêng cho production.
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.PRODUCTION_API_URL }}
+          tags: |
+            ${{ steps.meta.outputs.web_image }}:${{ steps.meta.outputs.tag }}
+            ${{ steps.meta.outputs.web_image }}:${{ steps.meta.outputs.version }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  deploy:
+    name: Deploy lên Render và smoke test
+    needs: images
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Deploy Render
+        # Migration (prisma migrate deploy) chạy trong môi trường Render, không chạy từ runner.
+        env:
+          RENDER_API_DEPLOY_HOOK: ${{ secrets.RENDER_API_DEPLOY_HOOK }}
+          RENDER_WEB_DEPLOY_HOOK: ${{ secrets.RENDER_WEB_DEPLOY_HOOK }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          API_IMAGE: ${{ needs.images.outputs.api_image }}:${{ needs.images.outputs.tag }}
+          WEB_IMAGE: ${{ needs.images.outputs.web_image }}:${{ needs.images.outputs.tag }}
+        run: node scripts/deploy-render.mjs
+      - name: Smoke test production
+        env:
+          PRODUCTION_WEB_URL: ${{ vars.PRODUCTION_WEB_URL }}
+          PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
+        run: node scripts/smoke-production.mjs
+      - name: Ghi nhận bản đã phát hành
+        if: ${{ success() }}
+        run: |
+          {
+            echo "### Đã triển khai ${{ needs.images.outputs.version }}"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- API: \`${{ needs.images.outputs.api_image }}:${{ needs.images.outputs.tag }}\`"
+            echo "- Web: \`${{ needs.images.outputs.web_image }}:${{ needs.images.outputs.tag }}\`"
+            echo "- Rollback: chạy workflow **Rollback** với \`image_tag\` của bản ổn định trước."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Hướng dẫn rollback khi thất bại
+        if: ${{ failure() }}
+        run: |
+          echo "::error::Triển khai hoặc smoke test thất bại. Chạy workflow 'Rollback' với image_tag (commit SHA) của bản ổn định trước. Xem docs/deployment.md mục Rollback."
