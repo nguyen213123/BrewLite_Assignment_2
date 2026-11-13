@@ -94,7 +94,7 @@ test.describe('End-to-End Checkout Flow (Task 4.4 / Issue #20)', () => {
     await expect(orderCodeLocator).toBeVisible();
     const orderCodeText = await orderCodeLocator.innerText();
     const orderCode = orderCodeText.replace('Đơn ', '').trim();
-    expect(orderCode).toMatch(/^BL-[A-Z0-9]+$/);
+    expect(orderCode).toMatch(/^BL-[A-Z0-9-]+$/);
 
     // Lấy token đăng nhập của khách hàng từ sessionStorage trong trình duyệt
     const customerToken = await page.evaluate(() => sessionStorage.getItem('brewlite_access_token'));

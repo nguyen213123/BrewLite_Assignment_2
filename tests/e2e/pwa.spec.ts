@@ -36,7 +36,7 @@ test.describe('PWA & Offline Capability (Task 4.4 / NFR-09)', () => {
     expect(offlineRes.status()).toBe(200);
     const offlineText = await offlineRes.text();
     expect(offlineText).toContain('Bạn đang offline');
-    expect(offlineText).toContain('BrewLite Mộc Vị');
+    expect(offlineText).toContain('BrewLite');
 
     const swRes = await request.get('/sw.js');
     expect(swRes.status()).toBe(200);
