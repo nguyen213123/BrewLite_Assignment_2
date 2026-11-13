@@ -28,6 +28,15 @@ Phạm vi: API PostgreSQL thật, gateway thanh toán mô phỏng WALLET/CARD. G
 12. Lỗi hiển thị cho người dùng (`lib/checkout/errors.ts`): hết hàng/xung đột kho, lựa chọn hoặc sản phẩm không còn hợp lệ, mã sai/hết hạn/hết lượt, đơn đổi trạng thái, phiên hết hạn và lỗi mạng/timeout. Lỗi mạng luôn là kết quả chưa xác nhận, không bao giờ hiển thị như thành công.
 13. Sau thanh toán thành công, UI hiển thị điểm tích lũy lấy từ `/loyalty/me` (không tự cộng ở client). MVP không dùng điểm để giảm tiền.
 
+## Ví/Thẻ mô phỏng, Replay vs Retry và PWA Offline
+
+- `/checkout` có khối **Phương thức thanh toán** với 3 lựa chọn: **Ví / Thẻ mô phỏng (MOCK)** (mặc định; chọn WALLET/CARD và SUCCESS/FAIL), Stripe Sandbox, VNPAY Sandbox. Cùng khối này dùng cho lần thanh toán đầu và bước **Thử lại thanh toán** khi đơn `PAYMENT_FAILED` đã được server xác nhận.
+- **Replay** (chưa xác minh kết quả, `!state.verified`, hoặc đã có attempt mà đơn còn `PENDING`): control MOCK bị khóa theo attempt đã lưu, Stripe/VNPAY bị vô hiệu; nút "Kiểm tra lại & gửi lại cùng yêu cầu" GET đơn trước, chỉ gửi lại **cùng Idempotency-Key và payload** khi server vẫn báo `PENDING`.
+- **Retry** (`state.verified && order.status === 'PAYMENT_FAILED'`): giữ nguyên giỏ, cho chọn lại phương thức/kết quả (mặc định gợi ý SUCCESS) và gọi `session.pay(method, outcome, true)` trên cùng `orderId` với Idempotency-Key mới.
+- **PAID**: hiển thị `order.code`, trạng thái PAID, món đã mua được trừ khỏi giỏ qua `settleOrder`, có nút tới `/orders/[id]` và `/orders`.
+- **PWA**: `app/manifest.ts` (`/manifest.webmanifest`), `public/icon-192.png`, `public/icon-512.png`, `public/sw.js`, `public/offline.html`, `components/OfflineFallbackRegistration.tsx` gắn trong `app/layout.tsx`. Service worker chỉ cache tài nguyên tĩnh công khai cùng origin; không cache response API, request có `Authorization`, request không phải GET, request khác origin hoặc trang HTML (mất mạng thì hiện `/offline.html`). SW chỉ đăng ký ở production (hoặc `NEXT_PUBLIC_ENABLE_SW=1`).
+- Test: `Checkout.test.ts` (render MOCK mặc định, Retry, Replay, PAID), `app/pwa.test.ts` (manifest, icon, chính sách cache của `sw.js`, `offline.html`, layout).
+
 ## Kiểm tra thủ công
 
 - Đăng ký/đăng nhập → menu → Cappuccino M, Kem, qty 2 → cart → quote SAVE10 → 108.000đ → tạo đơn → SUCCESS → PAID, cart trừ 2, số dư tăng 10, lịch sử có đơn.

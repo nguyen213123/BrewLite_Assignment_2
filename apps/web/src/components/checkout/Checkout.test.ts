@@ -47,8 +47,10 @@ it('restores CARD/FAIL controls from the saved attempt instead of displaying WAL
       (require: typeof customRequire, compiled: { exports: object }, exports: object) => void;
     evaluate(customRequire, compiledModule, compiledModule.exports);
     const html = renderToStaticMarkup(React.createElement(compiledModule.exports.default));
-    assert.match(html, /<select disabled=""><option value="WALLET">.*?<option value="CARD" selected="">/);
-    assert.match(html, /<select disabled=""><option value="SUCCESS">.*?<option value="FAIL" selected="">/);
+    // Control MOCK hiển thị thật (không còn ẩn), bị khóa theo attempt đã lưu và đúng CARD/FAIL.
+    assert.doesNotMatch(html, /class="hidden"/);
+    assert.match(html, /<select[^>]*disabled=""[^>]*><option value="WALLET">[^]*?<option value="CARD" selected="">/);
+    assert.match(html, /<select[^>]*disabled=""[^>]*><option value="SUCCESS">[^]*?<option value="FAIL" selected="">/);
     assert.deepEqual(saved.attempt?.request, { orderId: 'order', method: 'CARD', mockOutcome: 'FAIL' });
   } finally {
     if (previousStorage) Object.defineProperty(globalThis, 'sessionStorage', previousStorage);
@@ -562,4 +564,173 @@ it('[Issue 2] receipt displays "Chưa có thông tin" when opened from history w
   // Mở từ lịch sử khi chưa biết phương thức: hiển thị "Chưa có thông tin", không mặc định Ví điện tử
   assert.match(html, /Chưa có thông tin/);
   assert.doesNotMatch(html, /Ví điện tử/);
+});
+
+// ===== Issue 2 (TV2): Ví/Thẻ mô phỏng (MOCK), Replay vs Retry, màn hình PAID =====
+
+it('[Issue 2] first payment shows MOCK (WALLET/CARD + SUCCESS/FAIL) as the default option next to Stripe/VNPAY', () => {
+  const saved: CheckoutState = {
+    userId: 'user',
+    purchased: [],
+    orderId: 'order-x',
+    order: {
+      id: 'order-x',
+      code: 'BL-TEST-001',
+      status: 'PENDING',
+      reservationStatus: 'HELD',
+      version: 1,
+      subtotal: 120000,
+      discount: 0,
+      total: 120000,
+      currency: 'VND',
+      promotionCode: null,
+      createdAt: '',
+      updatedAt: '',
+      items: [],
+    },
+  };
+  const html = renderCheckoutStatic(saved, true);
+  assert.match(html, /Ví \/ Thẻ mô phỏng \(MOCK\)/);
+  assert.match(html, /<input[^>]*checked=""[^>]*value="MOCK"/);
+  assert.doesNotMatch(html, /<input[^>]*checked=""[^>]*value="STRIPE"/);
+  assert.match(html, /Stripe/);
+  assert.match(html, /VNPAY/);
+  // Lần đầu: mặc định WALLET + SUCCESS, không có ghi chú khóa/replay (SSR luôn busy=true nên không kiểm tra disabled).
+  assert.doesNotMatch(html, /pointer-events-none/);
+  assert.match(html, /<option value="WALLET" selected="">/);
+  assert.match(html, /<option value="SUCCESS" selected="">/);
+  assert.match(html, /<option value="CARD">/);
+  assert.match(html, /<option value="FAIL">/);
+  assert.match(html, /Thanh toán 120000 VND bằng Ví điện tử mô phỏng/);
+  assert.doesNotMatch(html, /gửi lại cùng yêu cầu/);
+});
+
+it('[Issue 2] verified PAYMENT_FAILED keeps the cart message and offers MOCK retry with a new key (not VNPAY only)', () => {
+  const saved: CheckoutState = {
+    userId: 'user',
+    purchased: [{ id: 'line-1', key: 'cap|M', qty: 2 }],
+    orderId: 'order-x',
+    order: {
+      id: 'order-x',
+      code: 'BL-TEST-001',
+      status: 'PAYMENT_FAILED',
+      reservationStatus: 'HELD',
+      version: 1,
+      subtotal: 120000,
+      discount: 0,
+      total: 120000,
+      currency: 'VND',
+      promotionCode: null,
+      createdAt: '',
+      updatedAt: '',
+      items: [],
+    },
+    attempt: { key: 'old-key', request: { orderId: 'order-x', method: 'WALLET', mockOutcome: 'FAIL' } },
+  };
+  const html = renderCheckoutStatic(saved, true);
+  assert.match(html, /Thanh toán thất bại/);
+  assert.match(html, /Giỏ hàng của bạn vẫn được giữ nguyên/);
+  assert.match(html, /Thử lại thanh toán/);
+  assert.match(html, /Idempotency-Key mới/);
+  assert.match(html, /Ví \/ Thẻ mô phỏng \(MOCK\)/);
+  assert.match(html, /<input[^>]*checked=""[^>]*value="MOCK"/);
+  // Được chọn lại phương thức/kết quả: không bị khóa theo attempt cũ (không có ghi chú replay, Stripe/VNPAY không bị làm mờ).
+  assert.doesNotMatch(html, /pointer-events-none/);
+  assert.doesNotMatch(html, /Hệ thống giữ nguyên Idempotency-Key và nội dung cũ/);
+  assert.match(html, /Thử lại thanh toán ngay/);
+  // Không phải replay cùng key.
+  assert.doesNotMatch(html, /Kiểm tra lại &amp; gửi lại cùng yêu cầu/);
+  assert.match(html, /VNPAY/);
+});
+
+it('[Issue 2] unverified payment keeps payload locked and offers resend with the same Idempotency-Key', () => {
+  const saved: CheckoutState = {
+    userId: 'user',
+    purchased: [],
+    orderId: 'order-x',
+    order: {
+      id: 'order-x',
+      code: 'BL-TEST-001',
+      status: 'PENDING',
+      reservationStatus: 'HELD',
+      version: 1,
+      subtotal: 120000,
+      discount: 0,
+      total: 120000,
+      currency: 'VND',
+      promotionCode: null,
+      createdAt: '',
+      updatedAt: '',
+      items: [],
+    },
+    attempt: { key: 'same-key', request: { orderId: 'order-x', method: 'CARD', mockOutcome: 'SUCCESS' } },
+  };
+  const html = renderCheckoutStatic(saved, false);
+  assert.match(html, /Kiểm tra lại &amp; gửi lại cùng yêu cầu \(giữ Idempotency-Key cũ\)/);
+  assert.match(html, /<select[^>]*disabled=""[^>]*><option value="WALLET">[^]*?<option value="CARD" selected="">/);
+  assert.match(html, /<select[^>]*disabled=""[^>]*><option value="SUCCESS" selected="">/);
+  // Ghi chú replay + không cho đổi sang cổng khác khi một yêu cầu MOCK chưa xác minh.
+  assert.match(html, /Hệ thống giữ nguyên Idempotency-Key và nội dung cũ/);
+  assert.equal((html.match(/pointer-events-none opacity-50/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /Thử lại thanh toán ngay/);
+});
+
+it('[Issue 2] unverified screen after a lost retry offers verify and same-key resend, never a new-key retry', () => {
+  const saved: CheckoutState = {
+    userId: 'user',
+    purchased: [],
+    orderId: 'order-x',
+    order: {
+      id: 'order-x',
+      code: 'BL-TEST-001',
+      status: 'PAYMENT_FAILED',
+      reservationStatus: 'HELD',
+      version: 1,
+      subtotal: 120000,
+      discount: 0,
+      total: 120000,
+      currency: 'VND',
+      promotionCode: null,
+      createdAt: '',
+      updatedAt: '',
+      items: [],
+    },
+    attempt: { key: 'retry-key', request: { orderId: 'order-x', method: 'CARD', mockOutcome: 'SUCCESS' } },
+  };
+  const html = renderCheckoutStatic(saved, false);
+  assert.match(html, /Chưa xác nhận được kết quả thanh toán/);
+  assert.match(html, /Xác minh lại trạng thái đơn/);
+  assert.match(html, /gửi lại cùng yêu cầu \(giữ Idempotency-Key cũ\)/);
+  assert.doesNotMatch(html, /Thử lại thanh toán ngay/);
+});
+
+it('[Issue 2] PAID shows the order code, PAID status and links to /orders/[id] and /orders', () => {
+  const saved: CheckoutState = {
+    userId: 'user',
+    purchased: [],
+    orderId: 'order-x',
+    order: {
+      id: 'order-x',
+      code: 'BL-TEST-001',
+      status: 'PAID',
+      reservationStatus: 'HELD',
+      version: 1,
+      subtotal: 120000,
+      discount: 0,
+      total: 120000,
+      currency: 'VND',
+      promotionCode: null,
+      createdAt: '',
+      updatedAt: '',
+      items: [],
+    },
+    attempt: { key: 'ok-key', request: { orderId: 'order-x', method: 'WALLET', mockOutcome: 'SUCCESS' } },
+  };
+  const html = renderCheckoutStatic(saved, true);
+  assert.match(html, /BL-TEST-001/);
+  assert.match(html, /Đã thanh toán \(PAID\)/);
+  assert.match(html, /href="\/orders\/order-x"/);
+  assert.match(html, /href="\/orders"/);
+  // Màn hình PAID không còn khối chọn thanh toán.
+  assert.doesNotMatch(html, /Ví \/ Thẻ mô phỏng \(MOCK\)/);
 });
