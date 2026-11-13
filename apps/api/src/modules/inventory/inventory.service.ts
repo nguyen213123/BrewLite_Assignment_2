@@ -42,6 +42,7 @@ export class InventoryService implements InventoryPort {
 
   // Hoàn kho đúng một lần dựa trên OrderIngredientHold đã ghi khi reserve.
   // Chuyển reservationStatus sang RELEASED bằng câu cập nhật có điều kiện trước; nếu đã RELEASED thì bỏ qua.
+  // Snapshot giữ kho bảo toàn lượng cần trả ngay cả khi công thức món đã thay đổi sau lúc đặt.
   async release(tx: Tx, order: StoredOrder): Promise<void> {
     const flipped = await tx.order.updateMany({
       where: { id: order.id, reservationStatus: { in: ['HELD', 'CONSUMED'] } },

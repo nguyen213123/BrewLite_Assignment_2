@@ -17,6 +17,7 @@ import {
 //   $env:DATABASE_URL = "<server in apps/api/.env>"; $env:RUN_DB_TESTS = "1"; npm --prefix apps/api test -- inventory.integration
 // It creates its own temporary database (migrations applied), writes every fixture there and drops it afterwards,
 // so nothing is written to the development database. See tests/api/support/temp-database.ts.
+// Kiểm tra tranh nguyên liệu dùng chung và hoàn kho một lần bằng dữ liệu PostgreSQL tạm.
 const integration = process.env.RUN_DB_TESTS === '1' ? describe : describe.skip;
 
 integration('Inventory on PostgreSQL: transaction + optimistic locking', () => {

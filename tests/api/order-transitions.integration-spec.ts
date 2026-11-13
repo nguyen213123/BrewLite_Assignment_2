@@ -12,6 +12,7 @@ import { seedSingleIngredientProduct, stockOfProduct } from './support/recipe-fi
 //   $env:DATABASE_URL = "<value from apps/api/.env>"; $env:RUN_DB_TESTS = "1"
 //   npm --prefix apps/api test -- order-transitions.integration
 // Every fixture is written to a migrated temporary database, dropped after the suite even if a test fails.
+// Kiểm tra trạng thái, sự kiện và tài nguyên sau các yêu cầu hủy, pha chế hoặc retry cạnh tranh.
 const integration = process.env.RUN_DB_TESTS === '1' ? describe : describe.skip;
 
 type Status = 'PENDING' | 'PAID' | 'PAYMENT_FAILED';

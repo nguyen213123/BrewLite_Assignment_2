@@ -12,6 +12,7 @@ function validationError(field: string, message: string): ApiError {
 
 // business-rules §2.3: merge identical (product, size, topping set) lines, sort topping IDs,
 // and keep the merged qty within 1..99. The result is also the canonical payload for idempotency.
+// Chuẩn hóa giỏ giúp các cấu hình tương đương có cùng payload khi tính giá và kiểm tra idempotency.
 export function normalizeCartItems(items: Api.CartItem[]): Api.CartItem[] {
   const lines = new Map<string, Api.CartItem>();
   for (const item of items) {

@@ -12,6 +12,7 @@ export const ORDER_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatu
 };
 
 // The owner still needs conditional writes/version, audit and side effects in one transaction.
+// Kiểm tra cạnh chuyển trạng thái trước khi caller cập nhật đơn và thực hiện tác động lên kho.
 export function assertTransition(from: OrderStatus, to: OrderStatus): void {
   if (!ORDER_TRANSITIONS[from]?.includes(to)) {
     throw new ApiError(409, 'INVALID_ORDER_TRANSITION', `Không thể chuyển ${from} sang ${to}`);

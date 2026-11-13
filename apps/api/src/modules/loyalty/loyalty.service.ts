@@ -82,6 +82,7 @@ export class LoyaltyService implements LoyaltyPort, LoyaltyTransactionsPort {
     };
   }
 
+  // Caller xét điều kiện COMPLETED và giao dịch hoàn tiền trước khi ghi điểm trong cùng transaction.
   async earn(tx: Tx, order: StoredOrder): Promise<number> {
     const points = Math.floor(order.total / EARN_RATE_VND);
 

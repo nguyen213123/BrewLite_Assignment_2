@@ -73,6 +73,7 @@ export class PromotionsService implements PromotionsPort, PromotionRulesPort {
   }
 
   /** Giữ 1 lượt bằng UPDATE có điều kiện (an toàn khi đồng thời, ReadCommitted). */
+  // Lượt voucher được giữ trong tx tạo đơn hoặc thử lại, nên lỗi giữ kho sẽ rollback cả lượt này.
   async reserve(tx: Tx, promotionId: string): Promise<void> {
     const updated = await tx.$executeRaw`
       UPDATE "Promotion"

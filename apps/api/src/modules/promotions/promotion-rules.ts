@@ -15,6 +15,7 @@ export type PromotionEvaluation = { ok: true; discount: number } | { ok: false; 
 
 export const normalizeCode = (code: string) => code.trim().toUpperCase();
 
+// Chặn mức giảm vượt tạm tính để tổng thanh toán của đơn luôn không âm.
 export function calculateDiscount(rule: Pick<PromotionRule, 'type' | 'value' | 'maxDiscount'>, subtotal: number): number {
   if (rule.type === 'FIXED') return Math.min(rule.value, subtotal);
   let discount = Math.floor((subtotal * rule.value) / 100);

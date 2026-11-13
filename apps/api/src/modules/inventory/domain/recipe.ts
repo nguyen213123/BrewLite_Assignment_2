@@ -28,6 +28,7 @@ export function perCupAmount(line: RecipeLine, size: Api.Size): number {
 
 // Spec A3: tính tổng lượng nguyên liệu cần cho giỏ hàng, gộp theo ingredientId và sắp xếp id tăng dần.
 // Topping không nhân hệ số size. Món hoặc topping không có công thức thì bỏ qua (InventoryService sẽ ném lỗi).
+// Gộp nguyên liệu dùng chung giữa món và topping để kiểm tra tổng nhu cầu của cả đơn.
 export function requiredIngredients(
   book: RecipeBook,
   items: Api.CartItem[],
