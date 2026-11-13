@@ -50,6 +50,7 @@ export class OrdersService implements OrdersPort {
   }
 
   // userId always comes from the JWT; prices always come from the catalog, never from the client.
+  // Tạo đơn, giữ lượt voucher, giữ nguyên liệu và ghi sự kiện dùng chung tx của IdempotencyService.
   create(userId: string, key: string, input: Api.OrderRequest): Promise<IdempotentResult<Api.Order>> {
     const items = normalizeCartItems(input.items);
     return this.idempotency.execute(

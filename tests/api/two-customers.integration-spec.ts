@@ -8,6 +8,7 @@ import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { createTempDatabase, type TempDatabase } from './support/temp-database';
 
 jest.setTimeout(30000);
+// Hai khách mua một và hai ly khi kho chỉ đủ hai ly được kiểm tra theo thứ tự và đồng thời.
 const integration = process.env.RUN_DB_TESTS === '1' ? describe : describe.skip;
 integration('Two customers competing for two cups', () => {
   let app: INestApplication;

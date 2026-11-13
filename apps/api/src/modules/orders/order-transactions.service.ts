@@ -96,6 +96,7 @@ export class OrderTransactionsService implements OrderTransactionsPort {
   // PAYMENT_FAILED -> PENDING with a fresh hold, atomically. The conditional UPDATE comes first so concurrent retries
   // serialize on the order row (only one holds stock). If stock or promo cannot be held again, the error rolls the whole
   // transaction back: the order stays PAYMENT_FAILED/RELEASED and nothing stays held. Prices are never recalculated.
+  // Giữ lại tài nguyên theo điều kiện hiện tại nhưng tiếp tục dùng snapshot giá của đơn đã tạo.
   async prepareRetry(tx: Tx, order: StoredOrder): Promise<StoredOrder> {
     assertTransition(order.status, 'PENDING');
     const changed = await tx.order.updateMany({

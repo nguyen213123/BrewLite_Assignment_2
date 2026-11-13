@@ -9,6 +9,7 @@ export type LoadedRecipeBook = RecipeBook & {
 };
 
 // Tải công thức của các món và topping được chọn kèm đơn vị gốc và tồn kho nguyên liệu.
+// Dùng client do caller truyền vào để đọc công thức trong cùng transaction giữ kho.
 export async function loadRecipeBook(
   db: RecipeDbClient,
   productIds: string[],

@@ -15,6 +15,7 @@ import { seedSingleIngredientProduct, stockOfProduct } from './support/recipe-fi
 // idempotency layer (other members' modules) are replaced by minimal stand-ins. Opt-in:
 //   $env:DATABASE_URL = "<server in apps/api/.env>"; $env:RUN_DB_TESTS = "1"; npm --prefix apps/api test -- orders-create.integration
 // Uses its own temporary database, dropped afterwards (see tests/api/support/temp-database.ts).
+// Các ca đồng thời đối chiếu số đơn và tồn cuối để chứng minh tạo đơn giữ kho có tính nguyên tử.
 const integration = process.env.RUN_DB_TESTS === '1' ? describe : describe.skip;
 
 integration('POST /orders holds stock on PostgreSQL', () => {
