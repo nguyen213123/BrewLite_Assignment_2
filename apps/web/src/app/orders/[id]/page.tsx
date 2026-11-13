@@ -3,7 +3,7 @@
 import { use, useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { apiFetch, apiGet, ApiRequestError } from '@/lib/api';
-import { getAuthSnapshot, getAuthServerSnapshot, subscribeAuth, updateUserPoints } from '@/lib/auth';
+import { getAuthSnapshot, getAuthServerSnapshot, subscribeAuth, updateUserPoints, getToken, getUser } from '@/lib/auth';
 import type { LoyaltyBalance, Order, OrderStatus } from '@/lib/contracts/api.generated';
 import OrderStatusBadge from '@/components/OrderStatusBadge';
 import { formatVnd } from '@/lib/format';
@@ -96,27 +96,32 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
   useEffect(() => {
     let ignore = false;
+    if (!user) return;
 
-    async function loadDetail() {
+    const currentToken = getToken();
+    const currentUserId = user.id;
+
+    async function loadDetail(silent = false) {
+      if (!silent) setLoading(true);
       try {
         const endpoint =
           user?.role === 'STAFF'
             ? `/orders/staff/${id}`
             : `/orders/${id}`;
         const data = await apiGet<Order>(endpoint);
-        if (!ignore) {
+        if (!ignore && getToken() === currentToken && getUser()?.id === currentUserId) {
           setOrder(data);
           setError(null);
           if (data.status === 'COMPLETED' && user?.role === 'CUSTOMER') {
             apiGet<LoyaltyBalance>('/loyalty/me')
               .then((bal) => {
-                if (!ignore) updateUserPoints(bal.points);
+                if (!ignore && getToken() === currentToken) updateUserPoints(bal.points);
               })
               .catch(() => {});
           }
         }
       } catch (err) {
-        if (!ignore) {
+        if (!ignore && getToken() === currentToken && getUser()?.id === currentUserId) {
           if (err instanceof ApiRequestError) {
             if (err.code === 'ORDER_NOT_FOUND') {
               setError('Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập đơn hàng này.');
@@ -128,17 +133,40 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           }
         }
       } finally {
-        if (!ignore) {
+        if (!ignore && !silent) {
           setLoading(false);
         }
       }
     }
 
-    loadDetail();
+    loadDetail(false);
+
+    // Auto-refresh every 5s for tracking order status (FR-18), pause when tab hidden
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (getToken() !== currentToken || getUser()?.id !== currentUserId) return;
+      loadDetail(true);
+    }, 5000);
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        if (getToken() === currentToken && getUser()?.id === currentUserId) {
+          loadDetail(true);
+        }
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+
     return () => {
       ignore = true;
+      clearInterval(interval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      }
     };
-  }, [id, refreshToken, user?.role]);
+  }, [id, refreshToken, user]);
 
   function handleRefresh() {
     setLoading(true);
@@ -209,6 +237,25 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     } finally {
       setActionBusy(false);
     }
+  }
+
+  if (!user) {
+    return (
+      <main className="mx-auto max-w-6xl px-6 py-12 text-center">
+        <div className="mx-auto max-w-lg rounded-2xl border border-[#e2d2b8] bg-[#efe5d4] p-8">
+          <h2 className="text-lg font-bold text-[#4a2e20]">Cần đăng nhập</h2>
+          <p className="mt-2 text-sm text-[#7a6254]">Vui lòng đăng nhập để xem chi tiết đơn hàng.</p>
+          <div className="mt-6 flex justify-center">
+            <Link
+              href="/login"
+              className="rounded-full bg-[#6d4c3d] px-7 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#563a2d]"
+            >
+              Đăng nhập ngay
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (loading) {

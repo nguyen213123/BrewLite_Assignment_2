@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { apiFetch, apiGet, ApiRequestError } from '@/lib/api';
-import { getAuthSnapshot, getAuthServerSnapshot, subscribeAuth } from '@/lib/auth';
+import { getAuthSnapshot, getAuthServerSnapshot, subscribeAuth, getToken, getUser } from '@/lib/auth';
 import type { Order, OrderPage, OrderStatus, OrderSummary } from '@/lib/contracts/api.generated';
 import OrderStatusBadge from '@/components/OrderStatusBadge';
 import ManualPaymentReview from '@/components/payments/ManualPaymentReview';
@@ -34,14 +34,20 @@ export default function StaffWorkbenchPage() {
 
   useEffect(() => {
     let ignore = false;
-    if (!isAuthorized) {
+    if (!isAuthorized || !user) {
       return;
     }
 
-    async function loadStaffOrders() {
+    const currentToken = getToken();
+    const currentUserId = user.id;
+
+    async function loadStaffOrders(silent = false) {
+      if (!silent) setLoading(true);
       try {
-        const res = await apiGet<OrderPage & { statusCounts: Partial<Record<OrderStatus, number>> }>(`/orders/staff?page=${page}&limit=20${statusFilter === 'ALL' ? '' : `&status=${statusFilter}`}`);
-        if (!ignore) {
+        const res = await apiGet<OrderPage & { statusCounts: Partial<Record<OrderStatus, number>> }>(
+          `/orders/staff?page=${page}&limit=20${statusFilter === 'ALL' ? '' : `&status=${statusFilter}`}`,
+        );
+        if (!ignore && getToken() === currentToken && getUser()?.role === 'STAFF' && getUser()?.id === currentUserId) {
           setOrders(res.data);
           setStatusCounts(res.statusCounts);
           setPage(Math.min(res.meta.page, Math.max(1, res.meta.totalPages)));
@@ -50,7 +56,7 @@ export default function StaffWorkbenchPage() {
           setError(null);
         }
       } catch (err) {
-        if (!ignore) {
+        if (!ignore && getToken() === currentToken && getUser()?.id === currentUserId) {
           if (err instanceof ApiRequestError) {
             setError(err.message || 'Không thể tải danh sách đơn hàng tại quầy.');
           } else {
@@ -58,15 +64,38 @@ export default function StaffWorkbenchPage() {
           }
         }
       } finally {
-        if (!ignore) setLoading(false);
+        if (!ignore && !silent) setLoading(false);
       }
     }
 
-    loadStaffOrders();
+    loadStaffOrders(false);
+
+    // Auto-refresh every 5s (FR-21 / AC-21.3), pause when tab hidden
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (getToken() !== currentToken || getUser()?.role !== 'STAFF' || getUser()?.id !== currentUserId) return;
+      loadStaffOrders(true);
+    }, 5000);
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        if (getToken() === currentToken && getUser()?.role === 'STAFF' && getUser()?.id === currentUserId) {
+          loadStaffOrders(true);
+        }
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+
     return () => {
       ignore = true;
+      clearInterval(interval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      }
     };
-  }, [isAuthorized, page, statusFilter, refreshToken]);
+  }, [isAuthorized, user, page, statusFilter, refreshToken]);
 
   async function handleAdvanceOrder(order: OrderSummary, nextStatus: 'PREPARING' | 'READY' | 'COMPLETED') {
     if (busyOrderId) return;
