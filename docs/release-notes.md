@@ -1,0 +1,36 @@
+# Release Notes – BrewLite
+
+> Mẫu này dùng cho GitHub Release của mỗi tag `vX.Y.Z`. Điền ngày, URL và liên kết sau khi phát hành thật.
+
+## v1.0.0 (Assignment 2) — _ngày phát hành: chưa điền_
+
+**Production**: Web _chưa điền_ · API _chưa điền_ · Health `/api/health/ready`
+**Image**: `ghcr.io/<owner>/brewlite-api:<commit-sha>`, `ghcr.io/<owner>/brewlite-web:<commit-sha>`
+
+### Tính năng
+
+- Menu mobile-first, chi tiết đồ uống (size S/M/L, nhiều topping), giỏ hàng lưu bền vững và tính tổng tiền.
+- Đăng ký, đăng nhập, JWT; phân quyền khách hàng, nhân viên (`STAFF`) và quản trị (`ADMIN`).
+- Báo giá phía server, tạo đơn nguyên tử, giữ/hoàn kho theo nguyên liệu (khóa lạc quan), mã khuyến mãi.
+- Thanh toán mô phỏng `WALLET`/`CARD` (kết quả `SUCCESS`/`FAIL`), cổng VNPay Sandbox và Stripe Test mode.
+- Idempotency cho tạo đơn và thanh toán (`Idempotency-Key`): gửi lại cùng key và payload trả kết quả cũ kèm `Idempotency-Replayed: true`; cùng key khác payload trả `409 IDEMPOTENCY_KEY_REUSED`.
+- Máy trạng thái đơn, lịch sử và theo dõi đơn, nhân viên cập nhật trạng thái pha chế, điểm thưởng (`EARN`/`REVERSE`).
+- `GET /api/health` và `GET /api/health/ready`.
+
+### Hạ tầng và phát hành
+
+- `docker compose up --build` chạy `db`, `backend`, `frontend` ở local.
+- CI trên mỗi Pull Request: hợp đồng OpenAPI, Prisma, lint, test với PostgreSQL 17, build, smoke test health.
+- CD: tag `vX.Y.Z` → Quality Gate → build image → push GHCR (tag theo commit SHA) → deploy Render → smoke test HTTPS. Workflow `Rollback` quay về image cũ.
+
+### Cách nâng cấp và rollback
+
+- Migration chạy tự động khi container `api` khởi động trên Render.
+- Rollback: chạy workflow **Rollback** với `image_tag` của bản ổn định trước (xem [`deployment.md`](deployment.md) mục 8). Rollback không hoàn tác migration.
+
+### Giới hạn đã biết
+
+- Thanh toán là môi trường mô phỏng/sandbox, không xử lý tiền thật.
+- Đơn `PENDING` chưa có cơ chế tự hết hạn theo thời gian; dùng nút hủy đơn.
+- Tiền đến sau khi đơn đã hủy hoặc trùng được ghi nhận để hoàn tiền thủ công, hệ thống không tự gọi API hoàn tiền.
+- Bước E2E trình duyệt trong CI chỉ chạy khi có cấu hình Playwright (Issue #20).

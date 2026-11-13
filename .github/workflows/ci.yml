@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:   # release.yml gọi lại workflow này làm Quality Gate
 
 permissions:
   contents: read
@@ -50,6 +51,7 @@ jobs:
       - run: npm --prefix apps/api run prisma:deploy
       - run: npm run lint
       - run: npm test
+      - run: npm run test:tools
       - run: npm run build
       - name: Smoke test API and database
         shell: bash
@@ -65,3 +67,45 @@ jobs:
           done
           cat backend.log
           exit 1
+      - name: Seed database for E2E
+        if: ${{ hashFiles('tests/e2e/playwright.config.ts') != '' }}
+        env:
+          # Mật khẩu chỉ dùng cho database tạm của runner, không phải secret thật.
+          SEED_ADMIN_PASSWORD: ci-admin-password-1
+          SEED_STAFF_PASSWORD: ci-staff-password-1
+        run: |
+          npm --prefix apps/api run build:seed
+          npm --prefix apps/api run seed
+      - name: Browser E2E (Playwright)
+        # Chỉ chạy khi nhóm đã thêm cấu hình Playwright (Issue #20, tests/e2e/).
+        if: ${{ hashFiles('tests/e2e/playwright.config.ts') != '' }}
+        shell: bash
+        run: |
+          npx playwright install --with-deps chromium
+          npm --prefix apps/api start > e2e-backend.log 2>&1 &
+          api_pid=$!
+          npm --prefix apps/web start > e2e-web.log 2>&1 &
+          web_pid=$!
+          trap 'kill "$api_pid" "$web_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..60}; do
+            if curl --fail --silent http://localhost:3001/api/health/ready >/dev/null \
+              && curl --fail --silent http://localhost:3000 >/dev/null; then
+              break
+            fi
+            if [ "$attempt" = "60" ]; then
+              echo "web/api không sẵn sàng"; cat e2e-backend.log e2e-web.log; exit 1
+            fi
+            sleep 1
+          done
+          npm run test:e2e
+      - name: Upload E2E report
+        if: ${{ failure() && hashFiles('tests/e2e/playwright.config.ts') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            playwright-report
+            test-results
+            e2e-backend.log
+            e2e-web.log
+          if-no-files-found: ignore

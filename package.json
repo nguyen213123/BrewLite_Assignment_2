@@ -11,6 +11,7 @@
     "build": "npm --prefix apps/api run build && npm --prefix apps/web run build",
     "lint": "npm --prefix apps/api run lint && node apps/api/node_modules/eslint/bin/eslint.js --config apps/api/eslint.config.mjs tests/api --max-warnings 0 && npm --prefix apps/web run lint",
     "test": "npm --prefix apps/api test && npm --prefix apps/web test",
+    "test:tools": "node --test \"tests/tools/*.test.mjs\"",
     "test:db": "node tests/tools/test-checkout-db.cjs",
     "stripe:listen": "node apps/api/tools/stripe-listener.cjs",
     "qa:up": "node tests/tools/qa-stack.cjs up",

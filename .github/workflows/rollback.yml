@@ -1,0 +1,53 @@
+name: Rollback
+
+# Triển khai lại image đã có trên GHCR (tag = commit SHA của bản ổn định trước), rồi smoke test.
+# Không build lại, không chạy migration mới: chỉ đổi image đang chạy.
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Tag image cần quay về (commit SHA của bản ổn định trước)"
+        required: true
+        type: string
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Kiểm tra định dạng tag
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          if ! [[ "$IMAGE_TAG" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
+            echo "::error::image_tag không hợp lệ"; exit 1
+          fi
+        shell: bash
+      - name: Deploy lại image cũ
+        env:
+          RENDER_API_DEPLOY_HOOK: ${{ secrets.RENDER_API_DEPLOY_HOOK }}
+          RENDER_WEB_DEPLOY_HOOK: ${{ secrets.RENDER_WEB_DEPLOY_HOOK }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          OWNER: ${{ github.repository_owner }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        shell: bash
+        run: |
+          owner="$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')"
+          export API_IMAGE="ghcr.io/${owner}/brewlite-api:${IMAGE_TAG}"
+          export WEB_IMAGE="ghcr.io/${owner}/brewlite-web:${IMAGE_TAG}"
+          node scripts/deploy-render.mjs
+      - name: Smoke test sau rollback
+        env:
+          PRODUCTION_WEB_URL: ${{ vars.PRODUCTION_WEB_URL }}
+          PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
+        run: node scripts/smoke-production.mjs

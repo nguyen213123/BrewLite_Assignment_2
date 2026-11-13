@@ -13,7 +13,7 @@ Dự án được phát triển cho nhóm 6 thành viên với kiến trúc tác
 3. [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
 4. [Hướng dẫn cài đặt & Chạy phát triển (Quick Start)](#-hướng-dẫn-cài-đặt--chạy-phát-triển-quick-start)
 5. [Nạp dữ liệu mẫu (Seed Data)](#-nạp-dữ-liệu-mẫu-seed-data)
-6. [Chạy toàn bộ bằng Docker Compose](#-chạy-toàn-bộ-bằng-docker-compose)
+6. [Chạy toàn bộ bằng Docker Compose](#-chạy-toàn-bộ-bằng-docker-compose) · [CI/CD, Triển khai Production & Rollback](#-cicd-triển-khai-production--rollback)
 7. [Kiểm tra & Xem dữ liệu Database](#-kiểm-tra--xem-dữ-liệu-database)
 8. [Kiểm thử, Nghiệm thu & Bàn giao (QA)](#-kiểm-thử-nghiệm-thu--bàn-giao-qa)
 9. [Bảng tra cứu lệnh chung](#-bảng-tra-cứu-lệnh-chung)
@@ -230,6 +230,20 @@ docker compose exec -T backend npm run seed
 
 ---
 
+## 🚢 CI/CD, Triển khai Production & Rollback
+
+Production chạy trên **Render** (hai Web Service lấy image từ **GHCR** + Render PostgreSQL 17). Hướng dẫn đầy đủ, gồm biến môi trường, thiết lập Render/GitHub lần đầu, phát hành, smoke test và rollback, nằm ở [`docs/deployment.md`](docs/deployment.md).
+
+| Workflow | Khi nào chạy | Làm gì |
+| --- | --- | --- |
+| [`ci.yml`](.github/workflows/ci.yml) | Pull Request, push vào `main` | Cài đặt, lint, test (PostgreSQL 17 thật), build, smoke test `/api/health/ready`; chạy seed và Playwright E2E khi có `tests/e2e/` |
+| [`release.yml`](.github/workflows/release.yml) | Push tag `vX.Y.Z` | Quality Gate → build image (tag theo commit SHA) → push GHCR → deploy Render bằng secret → smoke test HTTPS |
+| [`rollback.yml`](.github/workflows/rollback.yml) | Chạy tay | Deploy lại image cũ theo `image_tag`, rồi smoke test |
+
+Phát hành: `git tag v1.0.0 && git push origin v1.0.0`. Rollback: Actions → **Rollback** → nhập `image_tag` (commit SHA bản ổn định trước). Ghi chú phát hành: [`docs/release-notes.md`](docs/release-notes.md). Sơ đồ: [`docs/architecture/deployment-diagram.md`](docs/architecture/deployment-diagram.md).
+
+---
+
 ## 🗄 Kiểm tra & Xem dữ liệu Database
 
 Bạn có thể kiểm tra trực tiếp dữ liệu trong PostgreSQL bằng 3 cách:
@@ -299,6 +313,7 @@ npm run qa:down        # Dọn dẹp riêng container, network và dữ liệu t
 | `npm run lint` | Kiểm tra quy chuẩn code (ESLint) cho cả hai ứng dụng |
 | `npm run build` | Generate Prisma Client và build production cho Backend & Frontend |
 | `npm test` | Kiểm thử HTTP, DTO, Guard, State Machine, Giỏ hàng và Checkout Session |
+| `npm run test:tools` | Kiểm thử các script triển khai trong `scripts/` (deploy Render, smoke test production) |
 | `npm run test:db` | Kiểm thử toàn bộ 431 test backend và 89 frontend với PostgreSQL tạm riêng |
 | `npm run api:types` | Sinh tự động TypeScript types từ `docs/api/openapi.yaml` cho Backend & Frontend |
 | `npm run api:check` | Xác minh TypeScript types đã sinh khớp với hợp đồng OpenAPI |
