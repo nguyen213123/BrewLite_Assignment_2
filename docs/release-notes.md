@@ -1,11 +1,11 @@
 # Release Notes – BrewLite
 
-> Mẫu này dùng cho GitHub Release của mỗi tag `vX.Y.Z`. Điền ngày, URL và liên kết sau khi phát hành thật.
+> Nội dung này dùng cho GitHub Release của tag `vX.Y.Z`.
 
-## v1.0.0 (Assignment 2) — _ngày phát hành: chưa điền_
+## v1.0.0 (Assignment 2) — 14/11/2026
 
-**Production**: Web _chưa điền_ · API _chưa điền_ · Health `/api/health/ready`
-**Image**: `ghcr.io/<owner>/brewlite-api:<commit-sha>`, `ghcr.io/<owner>/brewlite-web:<commit-sha>`
+**Production**: Web https://brewlite-web-btram.onrender.com · API https://brewlite-api-btram.onrender.com/api · Health https://brewlite-api-btram.onrender.com/api/health/ready
+**Image**: `ghcr.io/nguyen213123/brewlite-api` và `ghcr.io/nguyen213123/brewlite-web`, tag theo commit SHA (bản triển khai: commit `294732b`)
 
 ### Tính năng
 
@@ -34,3 +34,5 @@
 - Đơn `PENDING` chưa có cơ chế tự hết hạn theo thời gian; dùng nút hủy đơn.
 - Tiền đến sau khi đơn đã hủy hoặc trùng được ghi nhận để hoàn tiền thủ công, hệ thống không tự gọi API hoàn tiền.
 - Bước E2E trình duyệt trong CI chỉ chạy khi có cấu hình Playwright (Issue #20).
+- Production chạy trên gói Free của Render: dịch vụ ngủ khi nhàn rỗi (request đầu chậm), database hết hạn sau 30 ngày (khoảng 13/12/2026).
+- Webhook Stripe và VNPay Sandbox chưa cấu hình trên production; rollback mới thử về chính commit đang chạy.
