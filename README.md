@@ -4,6 +4,17 @@
 
 Dự án được phát triển cho nhóm 6 thành viên với kiến trúc tách biệt Frontend / Backend rõ ràng, tuân thủ nghiêm ngặt hợp đồng OpenAPI 3.0 và kiểm thử tự động toàn diện trên PostgreSQL thật.
 
+### 🌐 Truy cập phiên bản Production
+
+| Dịch vụ | Địa chỉ | Ghi chú |
+| --- | --- | --- |
+| **Web Frontend (HTTPS)** | [https://brewlite-web-btram.onrender.com](https://brewlite-web-btram.onrender.com) | Giao diện người dùng Next.js triển khai trên Render |
+| **Backend API** | `https://brewlite-api-btram.onrender.com/api` | REST API NestJS (ví dụ: `/api/products`) |
+| **API Health (Liveness)** | [https://brewlite-api-btram.onrender.com/api/health](https://brewlite-api-btram.onrender.com/api/health) | Kiểm tra trạng thái tiến trình API |
+| **API Health (Readiness)** | [https://brewlite-api-btram.onrender.com/api/health/ready](https://brewlite-api-btram.onrender.com/api/health/ready) | Kiểm tra API kèm kết nối PostgreSQL |
+
+*(Lưu ý: gói miễn phí trên Render có thể sleep khi không có truy cập; request đầu tiên có thể mất khoảng 30–60 giây để khởi động lại container.)*
+
 ---
 
 ## 📑 Mục lục
@@ -44,12 +55,12 @@ Toàn bộ các trang được thiết kế đồng bộ theo bảng màu **Brew
 | `/` hoặc `/menu` | **Trang chủ & Thực đơn** | Hero banner BrewLite, danh sách đồ uống phân trang (`GET /api/products`), bộ khung thẻ kem cát và giới thiệu thương hiệu. |
 | `/products/[id]` | **Chi tiết đồ uống** | Chọn kích cỡ bắt buộc (`S` / `M` / `L`), chọn nhiều topping tùy ý, tự động tính số ly tồn kho theo size đang chọn, kiểm tra tồn kho topping, giới hạn số lượng theo nguyên liệu khả dụng, tính giá tạm tính và thêm vào giỏ. |
 | `/cart` | **Giỏ hàng** | Quản lý danh sách món đã chọn, gộp dòng cùng cấu hình, tăng/giảm số lượng (`1–99`), xem tạm tính và điểm thưởng dự kiến. |
-| `/checkout` | **Thanh toán & Đặt đơn** | Tiến trình 3 bước: **(1)** Kiểm tra giỏ & Báo giá khuyến mãi → **(2)** Tạo đơn giữ hàng & Thanh toán qua cổng VNPay Sandbox → **(3)** Xác nhận kết quả & Tích điểm. |
+| `/checkout` | **Thanh toán & Đặt đơn** | Tiến trình 3 bước: **(1)** Kiểm tra giỏ & Báo giá khuyến mãi → **(2)** Tạo đơn giữ hàng & Thanh toán (cổng mô phỏng Ví/Thẻ, VNPay Sandbox hoặc Stripe Test Mode) → **(3)** Xác nhận kết quả đơn hàng (điểm thưởng được cộng khi đơn đạt `COMPLETED`). |
 | `/orders` | **Lịch sử đơn hàng** | Danh sách các đơn đã đặt của tài khoản (`GET /api/orders/me`), hiển thị trạng thái đơn, trạng thái giữ kho và mã ưu đãi. |
 | `/orders/[id]` | **Chi tiết đơn hàng** | Snapshot chi tiết từng món/topping lúc đặt, tiếp tục thanh toán/hủy đơn; hỗ trợ nút chuyển trạng thái pha chế (`PREPARING` → `READY` → `COMPLETED`) cho tài khoản `STAFF`. |
 | `/loyalty` | **Điểm thưởng Loyalty** | Xem tổng điểm hiện tại (`GET /api/loyalty/me`), quy tắc tích điểm (`10.000₫ = 1 điểm`) và sổ cái biến động điểm (`EARN` / `REVERSE`). |
 | `/login`, `/register` | **Đăng nhập / Đăng ký** | Xác thực khách hàng & nhân viên bằng JWT Bearer token. |
-| `/payments` | **Chuyển hướng thanh toán** | Tự động chuyển hướng về `/checkout`; trang kết quả callback VNPay tại `/payments/vnpay-return`. |
+| `/payments` | **Chuyển hướng thanh toán** | Tự động chuyển hướng về `/checkout`; trang kết quả callback VNPay tại `/payments/vnpay-return` và Stripe tại `/payments/stripe-return`. |
 
 Nếu VNPay xác nhận thanh toán thành công sau khi đơn đã bị hủy, hệ thống vẫn ghi nhận giao dịch `SUCCEEDED`, đánh dấu `MANUAL_REFUND_REQUIRED` và `requiresManualReview`. Đơn giữ `CANCELLED`, kho đã hoàn không bị trừ lại, không cộng điểm và không gọi API hoàn tiền. Khách và nhân viên xem cảnh báo tại `/orders`; nhân viên đối soát và hoàn tiền thủ công bên ngoài hệ thống. API `GET /api/payments/vnpay/manual-review` trả các giao dịch cần kiểm tra (khách chỉ thấy giao dịch của mình, nhân viên thấy toàn bộ), không bị giới hạn bởi danh sách giao dịch gần nhất. Callback lặp lại không tạo giao dịch trùng.
 
@@ -91,9 +102,9 @@ Lưu signing secret do listener cấp vào `STRIPE_WEBHOOK_SECRET` trong `apps/a
 2. **Xử lý phía Server:** Backend dùng PostgreSQL thật để tính giá, giữ/trả kho và lượt khuyến mãi, lưu đơn/thanh toán và cộng/đảo điểm. Gateway Ví (`WALLET`) / Thẻ (`CARD`) là cổng mô phỏng theo phạm vi bài tập, không thu tiền thật.
 3. **Kịch bản kiểm thử mẫu:**
    - Đăng ký tài khoản rồi chọn **Cappuccino size M + Kem × 2** và nhập mã **`SAVE10`**: Tạm tính `120.000 ₫`, giảm `12.000 ₫`, tổng thanh toán **`108.000 ₫`**.
-   - Chọn kịch bản **Thành công (`SUCCESS`)** để đơn chuyển sang `PAID`, trừ các món đã mua khỏi giỏ và nhận **`+10 điểm`**.
+   - Chọn kịch bản **Thành công (`SUCCESS`)** để đơn chuyển sang `PAID` và trừ các món đã mua khỏi giỏ; sau khi `STAFF` hoàn tất đơn (`PREPARING` → `READY` → `COMPLETED`), hệ thống cộng **`+10 điểm`** trong sổ cái Loyalty.
    - Chọn kịch bản **Thất bại (`FAIL`)**: Đơn chuyển sang `PAYMENT_FAILED`, hệ thống tự động trả lại kho & lượt mã khuyến mãi (`RELEASED`), đồng thời **giữ nguyên giỏ hàng**. Sau `FAIL`, người dùng có thể thử lại thanh toán trên cùng đơn bằng khóa `Idempotency-Key` mới.
-   - **Hủy đơn `PAID` trước khi pha chế:** Hoàn trả tồn kho, hoàn lượt mã khuyến mãi và tự động ghi bút toán đảo điểm (`REVERSE`) trong sổ cái Loyalty.
+   - **Hủy đơn `PAID` trước khi pha chế:** Hoàn trả tồn kho, hoàn lượt mã khuyến mãi, xử lý hoàn tiền tương ứng (và tự động ghi bút toán đảo điểm `REVERSE` nếu đơn đã từng được cộng điểm `EARN`).
 4. **Bảo vệ Idempotency & Khôi phục phiên Checkout:**
    - Checkout lưu yêu cầu theo từng tài khoản trong `sessionStorage` trước khi gọi `POST`.
    - Nếu gặp lỗi mạng hoặc tải lại trang (F5), trình duyệt giữ nguyên cùng `Idempotency-Key` và payload; hệ thống bắt buộc xác minh trạng thái đơn (`GET /api/orders/:id`) trước khi tiếp tục.
@@ -116,7 +127,12 @@ Lưu signing secret do listener cấp vào `STRIPE_WEBHOOK_SECRET` trong `apps/a
 
 ## 🚀 Hướng dẫn cài đặt & Chạy phát triển (Quick Start)
 
-Mở **PowerShell** tại thư mục `BrewLite_Assignment_2` và thực hiện tuần tự:
+Clone mã nguồn (nếu chưa có trên máy) và mở **PowerShell** tại thư mục `BrewLite_Assignment_2`:
+
+```powershell
+git clone https://github.com/nguyen213123/BrewLite_Assignment_2.git
+cd BrewLite_Assignment_2
+```
 
 ### Bước 1: Cài đặt thư viện & Sao chép file môi trường
 
@@ -127,10 +143,12 @@ Copy-Item apps/api/.env.example apps/api/.env
 Copy-Item apps/web/.env.example apps/web/.env.local
 ```
 
-> **Lưu ý quan trọng về `JWT_SECRET`:**
-> Chỉ sao chép `.env` trong lần đầu tiên (giữ cấu hình riêng nếu file đã tồn tại). Sau khi tạo `apps/api/.env`, hãy mở file và thiết lập biến `JWT_SECRET` với **độ dài tối thiểu 32 ký tự** (Backend bắt buộc kiểm tra secret này khi khởi động và sẽ từ chối chạy nếu thiếu hoặc ngắn hơn 32 ký tự).
+> **Lưu ý quan trọng về biến môi trường bắt buộc trong `apps/api/.env`:**
+> Chỉ sao chép `.env` trong lần đầu tiên (giữ cấu hình riêng nếu file đã tồn tại). Sau khi tạo `apps/api/.env`, hãy mở file và điền đầy đủ:
+> 1. **`JWT_SECRET` (tối thiểu 32 ký tự):** Backend bắt buộc kiểm tra secret này khi khởi động và sẽ từ chối chạy nếu thiếu hoặc ngắn hơn 32 ký tự.
+> 2. **`SEED_ADMIN_PASSWORD` và `SEED_STAFF_PASSWORD` (8 ký tự đến 72 byte UTF-8):** Bắt buộc trước khi chạy lệnh `seed` ở Bước 2 (không có mật khẩu mặc định).
 >
-> Bạn có thể sinh nhanh chuỗi ngẫu nhiên 32 ký tự bằng:
+> Bạn có thể sinh nhanh chuỗi ngẫu nhiên 32 ký tự cho `JWT_SECRET` bằng:
 > - **PowerShell:**
 >   ```powershell
 >   -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object { [char]$_ })
@@ -232,7 +250,11 @@ docker compose exec -T backend npm run seed
 
 ## 🚢 CI/CD, Triển khai Production & Rollback
 
-Production chạy trên **Render** (hai Web Service lấy image từ **GHCR** + Render PostgreSQL 17). Hướng dẫn đầy đủ, gồm biến môi trường, thiết lập Render/GitHub lần đầu, phát hành, smoke test và rollback, nằm ở [`docs/deployment.md`](docs/deployment.md).
+Production chạy trên **Render** (hai Web Service lấy image từ **GHCR** + Render PostgreSQL 17):
+- **Web:** [https://brewlite-web-btram.onrender.com](https://brewlite-web-btram.onrender.com)
+- **API & Health check:** `https://brewlite-api-btram.onrender.com/api` · [Liveness `/api/health`](https://brewlite-api-btram.onrender.com/api/health) · [Readiness `/api/health/ready`](https://brewlite-api-btram.onrender.com/api/health/ready)
+
+Hướng dẫn đầy đủ, gồm biến môi trường, thiết lập Render/GitHub lần đầu, phát hành, smoke test và rollback, nằm ở [`docs/deployment.md`](docs/deployment.md).
 
 | Workflow | Khi nào chạy | Làm gì |
 | --- | --- | --- |
@@ -252,7 +274,7 @@ Bạn có thể kiểm tra trực tiếp dữ liệu trong PostgreSQL bằng 3 c
    ```powershell
    npm run db:studio
    ```
-   Trình duyệt sẽ mở tại **`http://localhost:5555`**, cho phép xem và lọc trực tiếp tất cả các bảng (`User`, `Product`, `ProductSize`, `Topping`, `Ingredient`, `ProductIngredient`, `ToppingIngredient`, `Order`, `OrderItem`, `OrderIngredientHold`, `Payment`, `Promotion`, `LoyaltyLedger`, `IdempotencyRecord`).
+   Trình duyệt sẽ mở tại **`http://localhost:5555`**, cho phép xem và lọc trực tiếp tất cả các bảng (`User`, `Product`, `ProductSize`, `Topping`, `ProductTopping`, `Ingredient`, `ProductIngredient`, `ToppingIngredient`, `Order`, `OrderItem`, `OrderItemTopping`, `OrderEvent`, `OrderIngredientHold`, `Payment`, `Promotion`, `LoyaltyEntry`, `IdempotencyRecord`, `SystemCheck`).
 
 2. **Dùng phần mềm quản lý DB (DBeaver, pgAdmin, TablePlus, DataGrip):**
    - **Host:** `localhost` | **Port:** `5432`
@@ -271,11 +293,14 @@ Bạn có thể kiểm tra trực tiếp dữ liệu trong PostgreSQL bằng 3 c
 ### Chạy bộ kiểm thử tự động (Unit, E2E & Database Integration)
 
 ```powershell
-npm test          # Backend + 89 test frontend; các suite PostgreSQL mặc định bỏ qua
-npm run test:db   # Toàn bộ 24 suite backend (431 tests) + 89 frontend trên PostgreSQL tạm, tự migrate và tự dọn DB
-npm run lint      # Kiểm tra ESLint (0 warnings/errors) cho cả Backend và Frontend
-npm run build     # Sinh Prisma Client và biên dịch Production cho cả hai ứng dụng
-npm run docs:check # Kiểm tra tính hợp lệ của OpenAPI 3.0, 37 fixtures và đối chiếu Prisma Schema với ERD
+npm test           # Chạy unit test Backend + Frontend; các suite cần PostgreSQL mặc định bỏ qua
+npm run test:db    # Chạy toàn bộ suite Backend + Frontend trên PostgreSQL tạm, tự migrate và tự dọn DB
+npm run test:e2e   # Chạy kiểm thử E2E trên trình duyệt thật bằng Playwright (cấu hình tests/e2e/playwright.config.ts)
+npm run test:tools # Kiểm thử các script deploy Render & smoke test production trong scripts/
+npm run lint       # Kiểm tra ESLint (0 warnings/errors) cho cả Backend và Frontend
+npm run build      # Sinh Prisma Client và biên dịch Production cho cả hai ứng dụng
+npm run docs:check # Kiểm tra tính hợp lệ của OpenAPI 3.0, fixtures và đối chiếu Prisma Schema với ERD
+npm run docs:schema # Xác thực Prisma Schema tài liệu thiết kế tại docs/diagrams/schema.prisma
 npm run api:check  # Kiểm tra file TypeScript generated types khớp tuyệt đối với OpenAPI contract
 ```
 
@@ -314,10 +339,12 @@ npm run qa:down        # Dọn dẹp riêng container, network và dữ liệu t
 | `npm run build` | Generate Prisma Client và build production cho Backend & Frontend |
 | `npm test` | Kiểm thử HTTP, DTO, Guard, State Machine, Giỏ hàng và Checkout Session |
 | `npm run test:tools` | Kiểm thử các script triển khai trong `scripts/` (deploy Render, smoke test production) |
-| `npm run test:db` | Kiểm thử toàn bộ 431 test backend và 89 frontend với PostgreSQL tạm riêng |
+| `npm run test:db` | Kiểm thử toàn bộ suite Backend (kèm PostgreSQL tạm riêng) và Frontend |
+| `npm run test:e2e` | Chạy kiểm thử end-to-end (Playwright) qua trình duyệt thật |
 | `npm run api:types` | Sinh tự động TypeScript types từ `docs/api/openapi.yaml` cho Backend & Frontend |
 | `npm run api:check` | Xác minh TypeScript types đã sinh khớp với hợp đồng OpenAPI |
 | `npm run docs:check` | Xác minh OpenAPI schema, fixtures ví dụ và đồng bộ schema Prisma với tài liệu ERD |
+| `npm run docs:schema` | Kiểm tra cú pháp Prisma Schema thiết kế (`docs/diagrams/schema.prisma`) |
 | `npm run db:generate` | Sinh lại Prisma Client (`apps/api/src/generated/prisma`) sau khi cập nhật schema |
 | `npm run db:migrate -- --name ten_thay_doi` | Tạo và áp dụng migration mới trong quá trình phát triển |
 | `npm --prefix apps/api run prisma:deploy` | Áp dụng các bản migration đã commit vào database |
