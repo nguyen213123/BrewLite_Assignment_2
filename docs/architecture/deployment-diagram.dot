@@ -3,8 +3,8 @@
 //               dot -Tpng -Gdpi=150 deployment-diagram.dot -o deployment-diagram.png
 //
 // Quy ước đánh dấu trạng thái (xem chú giải trên sơ đồ):
-//   Viền LIỀN  = đã có trong repository, đã kiểm tra (Dockerfile, docker-compose, ci.yml, health, migrations).
-//   Viền ĐỨT + nhãn «ĐÍCH S2» = cấu hình đích, Sprint 2 (Task 5.3/5.4) sẽ triển khai và kiểm chứng.
+//   Viền LIỀN = đã có trong repository hoặc đã triển khai và kiểm chứng thật ngày 14/11/2026.
+//   Viền ĐỨT + «CHƯA KIỂM CHỨNG» = cấu hình đã thiết kế nhưng chưa chạy thử trên môi trường thật.
 digraph BrewLiteDeployment {
   graph [rankdir=TB, fontname="Arial", fontsize=20, labelloc=t, pad=0.3, nodesep=0.35, ranksep=0.9,
          compound=true, newrank=true, splines=true,
@@ -28,20 +28,20 @@ digraph BrewLiteDeployment {
 
   // ===================== PRODUCTION (Render) =====================
   subgraph cluster_prod {
-    label="PRODUCTION — «deployment platform» Render  [cấu hình ĐÍCH Sprint 2: chưa tạo dịch vụ thật]";
-    labelloc=b; labeljust=l; style="rounded,filled,dashed"; fillcolor="#F4FBF4"; color="#2E7D32"; penwidth=2.2; fontname="Arial"; fontsize=14;
+    label="PRODUCTION — «deployment platform» Render  [ĐÃ TRIỂN KHAI, kiểm chứng 14/11/2026]";
+    labelloc=b; labeljust=l; style="rounded,filled"; fillcolor="#F4FBF4"; color="#2E7D32"; penwidth=2.2; fontname="Arial"; fontsize=14;
 
-    edge_node [label="«execution environment»\nRender edge (TLS, định tuyến)\nHTTPS :443 → domain *.onrender.com\nKHÔNG có CDN riêng\n«ĐÍCH S2»", fillcolor="#E8F5E9", color="#2E7D32", style="filled,dashed"];
+    edge_node [label="«execution environment»\nRender edge (TLS, định tuyến)\nHTTPS :443 → domain *.onrender.com\nKHÔNG có CDN riêng\n(đã kiểm chứng 14/11)", fillcolor="#E8F5E9", color="#2E7D32", style=filled];
 
     subgraph cluster_web {
-      label="«container» web — Render Web Service (image từ GHCR)  «ĐÍCH S2»"; style="rounded,dashed"; color="#1565C0"; fontname="Arial"; fontsize=11;
+      label="«container» web — Render Web Service (image từ GHCR)  (đã kiểm chứng 14/11)"; style=rounded; color="#1565C0"; fontname="Arial"; fontsize=11;
       web_art [label="«artifact»\nghcr.io/…/brewlite-web:<commit-sha>\nDockerfile: apps/web/Dockerfile (có sẵn)", shape=note, fillcolor="#FFFFFF"];
       web_app [label="«component»\nNext.js 16 (SSR + PWA)\nphục vụ tài nguyên tĩnh\nPORT :3000\nbuild-arg NEXT_PUBLIC_API_URL", fillcolor="#E3F2FD"];
       web_art -> web_app [style=dashed, arrowhead=none, label="«deploy»"];
     }
 
     subgraph cluster_api {
-      label="«container» api — Render Web Service (image từ GHCR)  «ĐÍCH S2»"; style="rounded,dashed"; color="#1565C0"; fontname="Arial"; fontsize=11;
+      label="«container» api — Render Web Service (image từ GHCR)  (đã kiểm chứng 14/11)"; style=rounded; color="#1565C0"; fontname="Arial"; fontsize=11;
       api_art [label="«artifact»\nghcr.io/…/brewlite-api:<commit-sha>\nDockerfile: apps/api/Dockerfile (có sẵn)", shape=note, fillcolor="#FFFFFF"];
       api_app [label="«component»\nNestJS 11 theo module/domain\nauth · products · orders · payments\ninventory · promotions · loyalty\nidempotency · order-history · health\nPORT :3001 · prefix /api", fillcolor="#E3F2FD"];
       health  [label="«interface»\nHealth check của Render:\nGET /api/health/ready\n(+ GET /api/health liveness)\nđã có trong code", shape=note, fillcolor="#FFFFFF", color="#2E7D32"];
@@ -49,17 +49,17 @@ digraph BrewLiteDeployment {
       api_app -> health [style=dashed, arrowhead=none];
     }
 
-    predeploy [label="«execution environment»\nMigration trong môi trường Render\nPre-Deploy Command: prisma migrate deploy\n(hoặc khi khởi động container api —\nDockerfile hiện đã chạy prisma:deploy khi start)\ndùng Internal Database URL\n«ĐÍCH S2»", fillcolor="#E8F5E9", color="#2E7D32", style="filled,dashed"];
+    predeploy [label="«execution environment»\nMigration trong môi trường Render, khi khởi động\ncontainer api (Dockerfile: prisma:deploy && npm start)\nqua Internal Database URL, trước khi vượt\nhealth check. Không dùng Pre-Deploy Command\n(đã kiểm chứng 14/11)", fillcolor="#E8F5E9", color="#2E7D32"];
 
     subgraph cluster_dbnode {
-      label="«device» Render PostgreSQL 17 (managed)  «ĐÍCH S2»"; style="rounded,dashed"; color="#C0392B"; fontname="Arial"; fontsize=11;
-      db  [label="«database»\nPostgreSQL 17 (khớp local)\n:5432 — chỉ Internal Database URL\nKHÔNG public (không mở IP ngoài)\ngói chọn khi tạo ở Sprint 2", shape=cylinder, fillcolor="#FDECEA", color="#C0392B"];
+      label="«device» Render PostgreSQL 17 (managed)  (đã kiểm chứng 14/11)"; style=rounded; color="#C0392B"; fontname="Arial"; fontsize=11;
+      db  [label="«database»\nPostgreSQL 17 (khớp local)\n:5432 — chỉ Internal Database URL\nKHÔNG public (chỉ mở IP tạm khi seed, rồi gỡ)\ngói Free (hết hạn sau 30 ngày)", shape=cylinder, fillcolor="#FDECEA", color="#C0392B"];
       vol [label="«artifact»\nĐĩa lưu trữ bền vững\ndo Render quản lý", shape=note, fillcolor="#FFFFFF", color="#C0392B"];
       db -> vol [style=dashed, arrowhead=none, label="«deploy»"];
     }
 
-    envvars [label="«configuration»\nEnvironment / Secrets trên Render\n(chỉ tên biến — không có giá trị trong repo)\napi: DATABASE_URL (Internal) · JWT_SECRET · FRONTEND_URL · PORT\nVNPAY_* · STRIPE_*\nweb: PORT (NEXT_PUBLIC_API_URL là build-arg, xem ghi chú)\n«ĐÍCH S2»", shape=folder, fillcolor="#FFF8E1", color="#B7791F", style="filled,dashed"];
-    logs    [label="«service»\nRender Logs\n(stdout / stderr của web, api)\n«ĐÍCH S2»", shape=note, fillcolor="#F5F5F5", color="#7F8C8D", style="filled,dashed"];
+    envvars [label="«configuration»\nEnvironment / Secrets trên Render\n(chỉ tên biến — không có giá trị trong repo)\napi: DATABASE_URL (Internal) · JWT_SECRET · FRONTEND_URL · PORT\nVNPAY_* · STRIPE_*\nweb: PORT (NEXT_PUBLIC_API_URL là build-arg, xem ghi chú)\n(đã kiểm chứng 14/11)", shape=folder, fillcolor="#FFF8E1", color="#B7791F", style=filled];
+    logs    [label="«service»\nRender Logs\n(stdout / stderr của web, api)\n(đã kiểm chứng 14/11)", shape=note, fillcolor="#F5F5F5", color="#7F8C8D", style=filled];
   }
 
   // ===================== DỊCH VỤ NGOÀI =====================
@@ -74,10 +74,10 @@ digraph BrewLiteDeployment {
   subgraph cluster_ci {
     label="CI / CD — GitHub"; style="rounded,filled"; fillcolor="#F3F6FB"; color="#2F4B7C"; penwidth=2.2; fontname="Arial"; fontsize=14;
     repo     [label="«repository»\nGitHub repository\nBrewLite_Assignment_2", shape=folder, fillcolor="#FFFFFF"];
-    runner   [label="«execution environment»\nGitHub Actions runner\nĐÃ CÓ (ci.yml): Install → Lint → Test → Build → smoke test local\n«ĐÍCH S2» (workflow deploy): docker build api + web (tag = commit SHA)\n→ push GHCR → deploy hook Render → smoke test /api/health/ready\n→ dừng pipeline nếu lỗi", fillcolor="#E3F2FD"];
-    ghsec    [label="«configuration»\nGitHub Actions secrets\n(token GHCR, deploy hook Render,\nURL production cho smoke test)\n«ĐÍCH S2»", shape=folder, fillcolor="#FFF8E1", color="#B7791F", style="filled,dashed"];
-    registry [label="«container registry»\nGHCR (ghcr.io)\nbrewlite-api, brewlite-web\ntag = commit SHA (hoặc digest)\n«ĐÍCH S2»", fillcolor="#E8EAF6", color="#303F9F", style="filled,dashed"];
-    rollback [label="Rollback: triển khai lại image\ngắn commit SHA / digest của\nbản ổn định trước trên GHCR/Render\n«ĐÍCH S2»", shape=note, style="filled,dashed", fillcolor="#FFFFFF", color="#C0392B", fontsize=10];
+    runner   [label="«execution environment»\nGitHub Actions runner\nci.yml: Install → Lint → Test → Build → smoke API (+ E2E khi có Playwright)\nrelease.yml: Quality Gate → build image api + web (tag = commit SHA)\n→ push GHCR → deploy hook Render → smoke test production\n→ dừng pipeline nếu lỗi (đã kiểm chứng 14/11)", fillcolor="#E3F2FD"];
+    ghsec    [label="«configuration»\nGitHub Actions secrets\n(token GHCR, deploy hook Render,\nURL production cho smoke test)\n(đã kiểm chứng 14/11)", shape=folder, fillcolor="#FFF8E1", color="#B7791F", style=filled];
+    registry [label="«container registry»\nGHCR (ghcr.io)\nbrewlite-api, brewlite-web\ntag = commit SHA (hoặc digest)\n(đã kiểm chứng 14/11)", fillcolor="#E8EAF6", color="#303F9F", style=filled];
+    rollback [label="Rollback: workflow rollback.yml\ntriển khai lại image theo commit SHA cũ\ntrên GHCR/Render, rồi smoke test\n(đã chạy thử 14/11, về chính SHA đang chạy)", shape=note, fillcolor="#FFFFFF", color="#C0392B", fontsize=10];
   }
 
   // ===================== LOCAL =====================
@@ -94,7 +94,7 @@ digraph BrewLiteDeployment {
   api_app -> db  [label="TCP :5432 (Internal Database URL)\nPrisma", dir=both];
   api_app -> vnpay  [label="HTTPS: tạo URL ký số,\ntruy vấn, hoàn tiền"];
   api_app -> stripe [label="HTTPS: Checkout Session"];
-  stripe -> api_app [label="HTTPS: webhook\n/api/payments/stripe/webhook\n(qua Render edge)", style=dashed];
+  stripe -> api_app [label="HTTPS: webhook\n/api/payments/stripe/webhook\n(qua Render edge)\nCHƯA KIỂM CHỨNG", style=dashed];
 
   // web -> api: phụ thuộc cấu hình, không phải lời gọi server-side
   web_app -> api_app [label="«use» NEXT_PUBLIC_API_URL (build-arg)\nweb chỉ cấp mã giao diện; mã chạy trong trình duyệt\ngọi API trực tiếp. KHÔNG gọi api phía server, không rewrites", style=dashed, color="#1565C0", fontcolor="#1565C0"];
@@ -122,8 +122,8 @@ digraph BrewLiteDeployment {
   legend [shape=plain, style="", label=<
     <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="#7F8C8D">
       <TR><TD ALIGN="LEFT"><B>Chú giải</B></TD></TR>
-      <TR><TD ALIGN="LEFT"><B>Viền liền</B>: đã có trong repository (Dockerfile, docker-compose.yml, ci.yml, health, migrations)</TD></TR>
-      <TR><TD ALIGN="LEFT"><B>Viền đứt + «ĐÍCH S2»</B>: cấu hình đích, Sprint 2 triển khai và kiểm chứng</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>Viền liền</B>: đã có trong repository hoặc đã triển khai và kiểm chứng thật (Render, GHCR, GitHub Actions) ngày 14/11/2026</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>Nét đứt «CHƯA KIỂM CHỨNG»</B>: webhook Stripe qua Render edge, chưa chạy thử thật</TD></TR>
       <TR><TD ALIGN="LEFT">Nét liền: kết nối khi chạy / luồng pipeline · nét đứt: triển khai, cấu hình, log, webhook</TD></TR>
       <TR><TD ALIGN="LEFT">Lưu ý: NEXT_PUBLIC_API_URL được nhúng lúc build image web (build-arg), nên image web phải build với URL API production</TD></TR>
     </TABLE>>];

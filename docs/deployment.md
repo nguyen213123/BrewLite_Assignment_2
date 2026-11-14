@@ -4,10 +4,7 @@
 > **Sơ đồ triển khai**: [`architecture/deployment-diagram.md`](architecture/deployment-diagram.md) · [`architecture/deployment-diagram.svg`](architecture/deployment-diagram.svg)
 > **Kiến trúc**: [`architecture/system-architecture.md`](architecture/system-architecture.md)
 
-Tài liệu này phân biệt rõ hai loại nội dung:
-
-- **Đã có trong repository, chạy được ngay**: docker-compose, health check, CI, các script và workflow phát hành.
-- **Cần thiết lập một lần trên Render và GitHub** (mục 6): dịch vụ Render, secret, biến cấu hình. Các bước ở mục 6 và cơ chế "Deploy Hook kèm `imgURL`" (chọn image GHCR cho từng lần deploy) chưa được chạy thử trên tài khoản Render thật vào thời điểm viết tài liệu. Hãy kiểm chứng ở lần triển khai đầu tiên và ghi kết quả vào mục 10; nếu Render hành xử khác, sửa `scripts/deploy-render.mjs` và tài liệu này cho khớp.
+Tài liệu này mô tả hệ thống **đã được triển khai và kiểm chứng thật ngày 14/11/2026** (xem mục 10). Phần chưa kiểm chứng được ghi rõ ở mục 11.
 
 ---
 
@@ -132,17 +129,37 @@ Script hỗ trợ:
 
 ## 6. Thiết lập Render và GitHub lần đầu
 
-Thực hiện một lần, theo thứ tự. Các bước trên giao diện Render có thể khác chút theo phiên bản giao diện; nếu khác, ưu tiên mô tả trong tài liệu Render.
+Thực hiện một lần, theo thứ tự. Các bước dưới đây là các bước nhóm đã làm thật; giao diện Render có thể thay đổi theo thời gian.
 
-1. **Render PostgreSQL 17**: New → PostgreSQL, chọn phiên bản 17, đặt tên `brewlite-db`, chọn gói. Chép **Internal Database URL** (không dùng External URL, và không mở IP truy cập từ ngoài).
-2. **Cho phép Render kéo image GHCR**: package GHCR mới tạo mặc định là private. Chọn một trong hai: đặt package `brewlite-api` và `brewlite-web` ở chế độ Public, hoặc thêm credential GHCR (username GitHub + Personal Access Token chỉ có quyền `read:packages`) vào Render (Account Settings → Registry Credentials).
-3. **Phát hành lần đầu để có image**: tạo hai Repository variable (`PRODUCTION_API_URL`, `PRODUCTION_WEB_URL`) bằng URL dự kiến của hai dịch vụ, rồi chạy `release.yml` một lần (có thể thất bại ở bước deploy vì chưa có hook; bước build/push vẫn tạo được image lên GHCR).
-4. **Dịch vụ `api`**: New → Web Service → *Existing image* → `ghcr.io/<owner>/brewlite-api:<tag>`. Đặt Environment Variables theo mục 2.1 (`DATABASE_URL` = Internal URL, `JWT_SECRET`, `PORT=3001`, `FRONTEND_URL`, các khóa VNPay/Stripe). Health Check Path: `/api/health/ready`.
-5. **Dịch vụ `web`**: New → Web Service → *Existing image* → `ghcr.io/<owner>/brewlite-web:<tag>`, `PORT=3000`, Health Check Path: `/`.
-6. **Deploy Hook**: ở trang từng dịch vụ (Settings → Deploy Hook) chép URL, lưu vào GitHub Secrets `RENDER_API_DEPLOY_HOOK` và `RENDER_WEB_DEPLOY_HOOK`. Tuỳ chọn: tạo API Key trong Render Account Settings và lưu `RENDER_API_KEY`.
-7. **Cập nhật URL thật**: nếu domain `*.onrender.com` khác dự kiến, sửa hai Repository variable cho khớp, rồi sửa `FRONTEND_URL` của `api`. Do `NEXT_PUBLIC_API_URL` được nhúng lúc build, image `web` phải được build lại bằng lần phát hành tiếp theo.
-8. **Nạp dữ liệu mẫu một lần** (catalog rỗng sẽ làm smoke test thất bại): dùng Shell của dịch vụ `api` trên Render nếu gói có hỗ trợ (`npm run build:seed && npm run seed`, cần đặt `SEED_ADMIN_PASSWORD`, `SEED_STAFF_PASSWORD`); nếu không, tạm thời cho phép IP máy bạn truy cập database, chạy seed từ máy với External Database URL, rồi **gỡ lại quyền truy cập ngay**. Không chạy seed trên database đã có dữ liệu thật vì seed đặt lại tồn kho demo.
-9. **Webhook Stripe** (nếu dùng): tạo endpoint `https://<api>.onrender.com/api/payments/stripe/webhook` trong Stripe Dashboard (Test mode), chép signing secret vào `STRIPE_WEBHOOK_SECRET`. Đặt `VNPAY_RETURN_URL` và `STRIPE_RETURN_URL` về domain `web` thật.
+1. **Đặt tên dịch vụ và hai Repository variable** (GitHub → Settings → Secrets and variables → Actions → Variables): `PRODUCTION_API_URL` (có `/api` ở cuối) và `PRODUCTION_WEB_URL`. URL suy ra từ tên dịch vụ Render: `https://<tên-dịch-vụ>.onrender.com`. Nhóm dùng `brewlite-api-btram` và `brewlite-web-btram`.
+2. **Render PostgreSQL 17**: New → PostgreSQL, tên `brewlite-db`, **Region Singapore**, version 17. Gói Free **hết hạn sau 30 ngày** (database tạo ngày 13/11/2026 hết hạn khoảng 13/12/2026); nâng gói nếu cần dùng lâu hơn. Chép **Internal Database URL**.
+3. **Phát hành lần đầu để có image**: GitHub → Actions → Release → Run workflow (nhánh `main`). Hai job `quality` và `images` xanh; job `deploy` lỗi vì chưa có hook (đúng dự kiến).
+4. **Đặt hai package GHCR sang Public** (`brewlite-api`, `brewlite-web`), do chủ repo làm (Profile → Packages → Package settings → Change visibility). Hoặc dùng credential GHCR với quyền `read:packages` trong Render.
+5. **Dịch vụ `api`**: New → Web Service → *Existing Image* → `ghcr.io/<owner>/brewlite-api:<commit-sha>` (tag SHA lấy ở trang Packages). Region Singapore (cùng region với database). Environment: `DATABASE_URL` (Internal URL), `JWT_SECRET` (tạo bằng `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`), `PORT=3001`, `FRONTEND_URL` (URL của `web`). **Settings → Health Check Path** = `/api/health/ready`.
+6. **Dịch vụ `web`**: tương tự với `ghcr.io/<owner>/brewlite-web:<commit-sha>`, `PORT=3000`, Health Check Path `/`. Không đặt `NEXT_PUBLIC_API_URL` ở đây (đã nhúng lúc build).
+7. **Deploy Hook**: ở mỗi dịch vụ, Settings → Deploy Hook, chép URL vào GitHub Secrets `RENDER_API_DEPLOY_HOOK`, `RENDER_WEB_DEPLOY_HOOK`. Tạo API Key trong Render Account Settings và lưu `RENDER_API_KEY` để pipeline chờ deploy `live`.
+8. **Nạp dữ liệu mẫu một lần** (catalog rỗng thì `/api/products` trả `data` rỗng và smoke test thất bại). Gói Free không có Shell, nên chạy từ máy:
+   1. Render → database → **Access Control**: thêm tạm quy tắc cho IP máy bạn (`<ip>/32`; nếu không được thì `0.0.0.0/0`, **chỉ trong thời gian ngắn**).
+   2. Chép **External Database URL** và thêm `?sslmode=require` vào cuối. Thiếu SSL thì seed báo `Server has closed the connection` (`P1017`).
+   3. Trong **một** cửa sổ PowerShell tại thư mục gốc repo:
+      ```powershell
+      $env:DATABASE_URL = "<External Database URL>?sslmode=require"
+      $env:FRONTEND_URL = "https://<web>.onrender.com"
+      $env:SEED_ADMIN_PASSWORD = "<mật khẩu admin>"
+      $env:SEED_STAFF_PASSWORD = "<mật khẩu staff>"
+      npm --prefix apps/api run prisma:generate
+      npm --prefix apps/api run build:seed
+      npm --prefix apps/api run seed
+      ```
+   4. Kiểm tra `https://<api>.onrender.com/api/products` có dữ liệu.
+   5. **Dọn ngay**: `Remove-Item Env:DATABASE_URL, Env:SEED_ADMIN_PASSWORD, Env:SEED_STAFF_PASSWORD, Env:FRONTEND_URL`, **xóa quy tắc trong Access Control** và xóa mọi ghi chú có URL kết nối hoặc mật khẩu.
+   - Seed đặt lại tồn kho demo; không chạy trên database có dữ liệu thật.
+9. **Webhook Stripe** (nếu dùng; chưa kiểm chứng): tạo endpoint `https://<api>.onrender.com/api/payments/stripe/webhook` trong Stripe (Test mode), chép signing secret vào `STRIPE_WEBHOOK_SECRET`. Đặt `VNPAY_RETURN_URL` và `STRIPE_RETURN_URL` về domain `web` thật.
+
+**Đặc điểm của Render cần biết** (theo [tài liệu Render](https://render.com/docs/deploy-an-image)):
+- Deploy Hook nhận tham số `imgURL` để chọn tag hoặc digest; **mọi phần khác của URL image phải giống hệt image khai báo ở dịch vụ**, nếu không Render từ chối (HTTP 400). Mã 200 là bắt đầu deploy, 202 là xếp hàng sau một deploy đang chạy (không có deploy id).
+- Dịch vụ dùng image **không tự deploy** khi có image mới; phải gọi hook (pipeline đã làm).
+- Dịch vụ gói Free **ngủ khi không có truy cập**, request đầu tiên có thể chậm 50 giây trở lên; smoke test chờ tối đa 5 phút.
 
 ---
 
@@ -196,18 +213,31 @@ Rollback theo **digest** (bất biến hơn tag): nếu cần, dùng `ghcr.io/<o
 | Trình duyệt báo lỗi CORS | `FRONTEND_URL` không khớp domain `web` | Sửa `FRONTEND_URL`, deploy lại `api` |
 | Web gọi sai API | Image `web` build với `NEXT_PUBLIC_API_URL` cũ | Sửa `PRODUCTION_API_URL`, phát hành lại |
 | Smoke test báo catalog rỗng | Chưa seed database production | Mục 6 bước 8 |
+| Seed báo `Server has closed the connection` (`P1017`) | Kết nối từ máy chưa bật SSL, hoặc IP chưa được phép | Thêm `?sslmode=require` vào URL; kiểm tra Access Control |
+| Deploy Hook trả HTTP 400 | URL image khác image khai báo ở dịch vụ (khác host hoặc tên) | Dùng đúng `ghcr.io/<owner>/brewlite-<api|web>:<tag>` |
 | Smoke test chờ lâu rồi lỗi | Render đang khởi động chậm hoặc deploy lỗi | Xem Logs; cân nhắc rollback |
 
 ---
 
-## 10. Bàn giao (Task 5.4): điền sau khi triển khai thật
+## 10. Bàn giao (Task 5.4)
+
+Triển khai production thực hiện ngày 13–14/11/2026.
 
 | Hạng mục | Giá trị |
 | --- | --- |
-| URL web (HTTPS) | _chưa điền_ |
-| URL API | _chưa điền_ |
-| Health check | `<URL API>/health/ready` |
-| Phiên bản/tag phát hành | _chưa điền_ |
-| Link lần chạy `release.yml` thành công | _chưa điền_ |
-| Link lần pipeline phát hiện lỗi (minh chứng) | _chưa điền_ |
-| Video demo, Sprint Review, Retrospective | _chưa điền_ (xem [`sprints/`](sprints/)) |
+| URL web (HTTPS) | https://brewlite-web-btram.onrender.com |
+| URL API | https://brewlite-api-btram.onrender.com/api |
+| Health check | https://brewlite-api-btram.onrender.com/api/health/ready |
+| Pipeline phát hiện lỗi và dừng (Release #1, thiếu secret) | https://github.com/nguyen213123/BrewLite_Assignment_2/actions/runs/43389012951 |
+| Pipeline thành công (Release #2, commit `294732b`) | https://github.com/nguyen213123/BrewLite_Assignment_2/actions/runs/43543148495 |
+| Rollback thành công (Rollback #1) | https://github.com/nguyen213123/BrewLite_Assignment_2/actions/runs/43544766610 |
+| Database | Render PostgreSQL 17, Singapore, gói Free, hết hạn khoảng 13/12/2026 |
+| Image | `ghcr.io/nguyen213123/brewlite-api` và `brewlite-web`, tag theo commit SHA |
+| Video demo, Sprint Review, Retrospective | Xem [`sprints/`](sprints/) |
+
+## 11. Phần chưa kiểm chứng và giới hạn
+
+- Rollback đã chạy thử về **chính** commit SHA đang chạy; chưa thử về một SHA khác, chưa thử rollback theo digest.
+- Webhook Stripe và luồng VNPay Sandbox chưa cấu hình trên production; thanh toán mô phỏng `WALLET`/`CARD` chạy không cần cấu hình thêm.
+- Migration chạy khi container `api` khởi động; nhóm không dùng Pre-Deploy Command.
+- Dịch vụ và database gói Free có giới hạn (ngủ khi nhàn rỗi, database hết hạn sau 30 ngày).
