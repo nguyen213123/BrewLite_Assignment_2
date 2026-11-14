@@ -228,6 +228,7 @@ Triển khai production thực hiện ngày 13–14/11/2026.
 | URL web (HTTPS) | https://brewlite-web-btram.onrender.com |
 | URL API | https://brewlite-api-btram.onrender.com/api |
 | Health check | https://brewlite-api-btram.onrender.com/api/health/ready |
+| Minh chứng CI trên PR (Task 4.4) | PR [#25](https://github.com/nguyen213123/BrewLite_Assignment_2/pull/25): [CI phát hiện lỗi (`43392242010`)](https://github.com/nguyen213123/BrewLite_Assignment_2/actions/runs/43392242010) → [CI thành công (`43393696567`)](https://github.com/nguyen213123/BrewLite_Assignment_2/actions/runs/43393696567) · Chi tiết: [`qa/ci-evidence.md`](qa/ci-evidence.md) |
 | Pipeline phát hiện lỗi và dừng (Release #1, thiếu secret) | https://github.com/nguyen213123/BrewLite_Assignment_2/actions/runs/43389012951 |
 | Pipeline thành công (Release #2, commit `294732b`) | https://github.com/nguyen213123/BrewLite_Assignment_2/actions/runs/43543148495 |
 | Rollback thành công (Rollback #1) | https://github.com/nguyen213123/BrewLite_Assignment_2/actions/runs/43544766610 |
