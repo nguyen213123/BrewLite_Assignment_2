@@ -35,3 +35,13 @@ Hoàn thiện **trọn vẹn chu trình Đặt hàng – Thanh toán không ti�
 | **Unit Tests** | ≥ 15 test cases, coverage ≥ 70% tầng domain/service | Tính giá sản phẩm/size/topping (`pricing.test.ts`, `catalog-pricing.e2e-spec.ts`), quy tắc khuyến mãi (`promotion-rules.e2e-spec.ts`), máy trạng thái đơn (`order-state.e2e-spec.ts`), giỏ hàng (`cart-store.test.ts`), phiên checkout (`session.test.ts`, `Checkout.test.ts`), điểm thưởng (`loyalty.e2e-spec.ts`). |
 | **Integration Tests** | ≥ 8 test cases với PostgreSQL thật | Tạo đơn & giữ kho nguyên liệu (`orders-create.integration-spec.ts`), tranh chấp tồn kho đồng thời (`two-customers.integration-spec.ts`, `inventory.integration-spec.ts`), chuyển trạng thái & hủy đơn (`order-transitions.integration-spec.ts`), thanh toán & idempotency (`checkout.integration-spec.ts`, `idempotency.e2e-spec.ts`), đối soát cổng thanh toán (`gateway-safety.integration-spec.ts`, `vnpay.integration-spec.ts`). |
 | **End-to-End (E2E) & QA** | ≥ 2 luồng đầu-cuối (Happy path & Payment failure/retry) | Luồng đặt hàng và thanh toán thành công → xác nhận đơn → pha chế `COMPLETED` cộng điểm, và luồng thanh toán thất bại (`PAYMENT_FAILED`) → nhả kho → thử lại thành công (`PAID`). |
+
+---
+
+## 4. Định nghĩa Hoàn thành (Definition of Done – DoD)
+
+Áp dụng thống nhất theo [`CONTRIBUTING.md`](../../CONTRIBUTING.md) và bổ sung yêu cầu phát hành của Sprint 2:
+- [x] Toàn bộ tiêu chí DoD kỹ thuật của Sprint 1 (`docs:check`, `api:check`, `lint` 0 warnings, `build`, unit/integration test với PostgreSQL 17 thật).
+- [x] Hoàn thiện kiểm thử E2E trình duyệt (Playwright) cho luồng checkout từ menu đến xác nhận đơn và trạng thái PWA offline.
+- [x] `docker compose up --build -d` khởi động đủ 3 service (`db`, `backend`, `frontend`) kèm health check `/api/health` và `/api/health/ready`.
+- [x] Pipeline CD (`.github/workflows/release.yml`) và hướng dẫn vận hành/rollback (`docs/deployment.md`, `README.md`) được kiểm chứng trên môi trường production HTTPS.

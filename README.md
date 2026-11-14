@@ -332,30 +332,35 @@ npm run qa:down        # Dọn dẹp riêng container, network và dữ liệu t
 ```text
 BrewLite_Assignment_2/
 ├── apps/
-│   ├── web/                   # Next.js, giao diện và logic phía trình duyệt
+│   ├── web/                   # Next.js, giao diện mobile-first/PWA và logic phía trình duyệt
 │   └── api/                   # NestJS, Prisma, migrations và REST API
 ├── docs/
-│   ├── requirements/          # Quy tắc nghiệp vụ và kế hoạch phát triển
-│   ├── diagrams/              # ERD và schema tham chiếu
-│   ├── architecture/
+│   ├── requirements/          # Task 1: bối cảnh, SRS (FR/NFR), Use Cases
+│   ├── diagrams/              # Task 2: Activity, Sequence, Class diagram, ERD
+│   ├── architecture/          # Task 3: Kiến trúc hệ thống, ADRs, Deployment diagram
 │   ├── api/                   # OpenAPI và dữ liệu mẫu
-│   ├── qa/                    # Bằng chứng kiểm thử từ repo nguồn
-│   ├── sprints/
-│   ├── traceability-matrix.md
-│   └── deployment.md
+│   ├── qa/                    # Bằng chứng kiểm thử & kịch bản demo
+│   ├── sprints/               # Backlog, Sprint 1 & 2 Planning / Review / Retrospective
+│   ├── traceability-matrix.md # Mục 8.1: Ma trận truy vết
+│   ├── deployment.md          # Hướng dẫn CI/CD, triển khai & rollback
+│   └── release-notes.md       # Ghi chú phát hành
 ├── tests/
 │   ├── api/                   # Kiểm thử tích hợp và E2E của API
-│   └── tools/                 # Công cụ chạy QA và đo hiệu năng
-├── .github/workflows/
+│   ├── e2e/                   # Kiểm thử trình duyệt Playwright
+│   └── tools/                 # Công cụ chạy QA, đo hiệu năng và kiểm thử script deploy
+├── scripts/                   # Script triển khai Render & smoke test production
+├── .github/workflows/         # CI (ci.yml), CD (release.yml), Rollback (rollback.yml)
 ├── docker-compose.yml
 ├── .env.example
+├── CONTRIBUTING.md            # Quy ước commit, branch/PR, Backlog & Definition of Done
 └── README.md
 ```
 
-**Nguyên tắc đóng góp trong nhóm:**
+**Nguyên tắc đóng góp trong nhóm (Task 4.1 & Task 4.2):**
 - Các module nghiệp vụ nằm trong `apps/api/src/modules/`. Controller/DTO và các port trong `apps/api/src/common/contracts/ports.ts` là điểm tích hợp chung; mọi thay đổi cần giữ nguyên giao dịch (`UnitOfWork`), guard bảo vệ và hợp đồng OpenAPI.
-- Không đưa dữ liệu giả (fixture) vào runtime để trả về kết quả thành công giả.
-- Mỗi tính năng phát triển trên nhánh riêng, tạo Pull Request (PR), vượt qua toàn bộ kiểm tra CI (`lint`, `test`, `build`, `docs:check`, `api:check`) và có ít nhất một thành viên khác review trước khi merge vào `main`.
+- Không đưa dữ liệu giả (fixture) vào runtime để trả về kết quả thành công giả; không commit `.env` hay secret.
+- **Chiến lược Branch & Pull Request:** mỗi tính năng/task phát triển trên nhánh riêng (`feat/...`, `fix/...`, `docs/...`, `ci/...`), mở PR theo [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md), pass toàn bộ kiểm tra CI (`lint`, `test`, `build`, `docs:check`, `api:check`, smoke & E2E) và có ít nhất một thành viên khác review trước khi merge vào `main`. Mọi thay đổi yêu cầu/sơ đồ/kiến trúc phải ghi rõ lý do trong commit/PR.
+- **Quy ước Commit, Product Backlog & Definition of Done:** xem chi tiết tại [`CONTRIBUTING.md`](CONTRIBUTING.md) và [`docs/sprints/README.md`](docs/sprints/README.md) (Conventional Commits `<type>(<scope>): <mô tả>`; các GitHub Issue `#17`–`#21` cho Sprint 1 & Sprint 2).
 
 ---
 
