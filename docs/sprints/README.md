@@ -28,3 +28,10 @@ Tài liệu trong thư mục `docs/sprints/` lưu trữ đầy đủ kế hoạc
 - [`acceptance-2026-10-26/planning.md`](acceptance-2026-10-26/planning.md)
 - [`acceptance-2026-10-26/review.md`](acceptance-2026-10-26/review.md)
 - [`acceptance-2026-10-26/retrospective.md`](acceptance-2026-10-26/retrospective.md)
+
+---
+
+## 2. Quy ước làm việc & Definition of Done (Task 4.1)
+
+- **Chiến lược Branch/PR, Quy ước Commit (`Conventional Commits`) và Definition of Done (DoD)** dùng chung cho cả Sprint 1 và Sprint 2 được quy định tại [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+- Bảng phân rã Sprint 1 (`18 SP`: `#17`, phần đầu `#19` & `#20`) và Sprint 2 (`22 SP`: `#18`, phần hoàn thiện `#19` & `#20`, `#21`) xem chi tiết trong [`sprint-1-planning.md`](sprint-1-planning.md) và [`sprint-2-planning.md`](sprint-2-planning.md).
