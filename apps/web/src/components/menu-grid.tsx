@@ -61,10 +61,13 @@ export function MenuGrid() {
   const [sortBy, setSortBy] = useState<ProductSort>('DEFAULT');
   const [page, setPage] = useState(1);
 
-  // Lấy toàn bộ danh sách sản phẩm active từ backend (limit=50)
+  // Lấy toàn bộ danh sách sản phẩm active từ backend (limit=50); dùng timeout 60s để chịu cold start trên Render Free
   useEffect(() => {
     const controller = new AbortController();
-    apiRequest<ProductPage>('/products?page=1&limit=50', { signal: controller.signal })
+    apiRequest<ProductPage>('/products?page=1&limit=50', {
+      signal: controller.signal,
+      timeoutMs: 60_000,
+    })
       .then(async ({ data }) => {
         let allProducts = data.data;
         // Nếu số lượng sản phẩm vượt quá 50, tải tiếp các trang còn lại
@@ -73,6 +76,7 @@ export function MenuGrid() {
             Array.from({ length: data.meta.totalPages - 1 }, (_, i) =>
               apiRequest<ProductPage>(`/products?page=${i + 2}&limit=50`, {
                 signal: controller.signal,
+                timeoutMs: 60_000,
               })
             )
           );
