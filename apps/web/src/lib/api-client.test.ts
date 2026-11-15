@@ -159,4 +159,10 @@ describe('describeApiError', () => {
     assert.match(describeApiError(new NetworkError()), /kết nối/i);
     assert.match(describeApiError(new Error('x')), /không mong muốn/);
   });
+  it('hiển thị thông báo rõ ràng khi bị giới hạn tần suất RATE_LIMIT_EXCEEDED', () => {
+    const withRetry = new ApiError(429, 'RATE_LIMIT_EXCEEDED', 'Too many requests', [], 180);
+    assert.match(describeApiError(withRetry), /180 giây/);
+    const withoutRetry = new ApiError(429, 'RATE_LIMIT_EXCEEDED', 'Too many requests', [], null);
+    assert.match(describeApiError(withoutRetry), /quá nhiều yêu cầu/i);
+  });
 });

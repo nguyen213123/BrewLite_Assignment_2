@@ -145,6 +145,111 @@ describe('HTTP Protection & Observability (Issue #20 - TV4)', () => {
         details: [],
       });
     });
+
+    it('includes CORS headers on 429 responses so browser clients can read the error', async () => {
+      const { Controller, Get } = await import('@nestjs/common');
+      @Controller('test-cors-rate')
+      class TestCorsRateController {
+        @Get('ping')
+        ping() {
+          return { ok: true };
+        }
+      }
+
+      const prevFrontendUrl = process.env.FRONTEND_URL;
+      process.env.FRONTEND_URL = 'https://brewlite-web-btram.onrender.com/';
+      const module = await Test.createTestingModule({
+        controllers: [TestCorsRateController],
+      }).compile();
+
+      const corsApp = module.createNestApplication();
+      configureApp(corsApp, {
+        rateLimitMax: 1,
+        rateLimitWindowMs: 60 * 1000,
+      });
+      await corsApp.init();
+
+      try {
+        await request(corsApp.getHttpServer())
+          .get('/api/test-cors-rate/ping')
+          .set('Origin', 'https://brewlite-web-btram.onrender.com')
+          .expect(200);
+
+        const blockedRes = await request(corsApp.getHttpServer())
+          .get('/api/test-cors-rate/ping')
+          .set('Origin', 'https://brewlite-web-btram.onrender.com')
+          .expect(429);
+
+        expect(blockedRes.headers['access-control-allow-origin']).toBe('https://brewlite-web-btram.onrender.com');
+        expect(blockedRes.headers['access-control-expose-headers']).toContain('Retry-After');
+      } finally {
+        await corsApp.close();
+        if (prevFrontendUrl === undefined) delete process.env.FRONTEND_URL;
+        else process.env.FRONTEND_URL = prevFrontendUrl;
+      }
+    });
+
+    it('separates rate-limit buckets per client IP when behind a reverse proxy (X-Forwarded-For)', async () => {
+      const { Controller, Get } = await import('@nestjs/common');
+      @Controller('test-proxy-rate')
+      class TestProxyRateController {
+        @Get('ping')
+        ping() {
+          return { ok: true };
+        }
+      }
+
+      const module = await Test.createTestingModule({
+        controllers: [TestProxyRateController],
+      }).compile();
+
+      const proxyApp = module.createNestApplication();
+      configureApp(proxyApp, {
+        rateLimitMax: 2,
+        rateLimitWindowMs: 60 * 1000,
+      });
+      await proxyApp.init();
+
+      try {
+        await request(proxyApp.getHttpServer())
+          .get('/api/test-proxy-rate/ping')
+          .set('X-Forwarded-For', '203.0.113.10')
+          .expect(200);
+        await request(proxyApp.getHttpServer())
+          .get('/api/test-proxy-rate/ping')
+          .set('X-Forwarded-For', '203.0.113.10')
+          .expect(200);
+        await request(proxyApp.getHttpServer())
+          .get('/api/test-proxy-rate/ping')
+          .set('X-Forwarded-For', '203.0.113.10')
+          .expect(429);
+
+        // A different client behind the same reverse proxy must NOT be rate-limited
+        await request(proxyApp.getHttpServer())
+          .get('/api/test-proxy-rate/ping')
+          .set('X-Forwarded-For', '203.0.113.11')
+          .expect(200);
+      } finally {
+        await proxyApp.close();
+      }
+    });
+
+    it('uses a higher default rate-limit cap in production when RATE_LIMIT_MAX is unset', async () => {
+      const { resolveRateLimitMax } = await import('../../apps/api/src/setup');
+      const prevNodeEnv = process.env.NODE_ENV;
+      const prevRateLimitMax = process.env.RATE_LIMIT_MAX;
+      delete process.env.RATE_LIMIT_MAX;
+      process.env.NODE_ENV = 'production';
+
+      try {
+        expect(resolveRateLimitMax()).toBeGreaterThanOrEqual(500);
+      } finally {
+        if (prevNodeEnv === undefined) delete process.env.NODE_ENV;
+        else process.env.NODE_ENV = prevNodeEnv;
+        if (prevRateLimitMax === undefined) delete process.env.RATE_LIMIT_MAX;
+        else process.env.RATE_LIMIT_MAX = prevRateLimitMax;
+      }
+    });
   });
 
   describe('Structured JSON Logging in production', () => {

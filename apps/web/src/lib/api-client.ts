@@ -131,13 +131,19 @@ const MESSAGES: Record<string, string> = {
   ORDER_VERSION_CONFLICT: 'Đơn hàng vừa được cập nhật, vui lòng tải lại.',
   IDEMPOTENCY_IN_PROGRESS: 'Yêu cầu đang được xử lý, vui lòng chờ giây lát.',
   IDEMPOTENCY_KEY_REUSED: 'Yêu cầu bị trùng khóa với nội dung khác. Vui lòng thử lại.',
+  RATE_LIMIT_EXCEEDED: 'Hệ thống đang nhận quá nhiều yêu cầu, vui lòng thử lại sau ít phút.',
   FEATURE_NOT_IMPLEMENTED: 'Chức năng này chưa sẵn sàng trên máy chủ.',
   INTERNAL_ERROR: 'Máy chủ gặp lỗi, vui lòng thử lại sau.',
 };
 
 /** Thông báo tiếng Việt cho người dùng, chọn theo `code` của backend. */
 export function describeApiError(error: unknown): string {
-  if (error instanceof ApiError) return MESSAGES[error.code] ?? 'Yêu cầu không thành công, vui lòng thử lại.';
+  if (error instanceof ApiError) {
+    if (error.code === 'RATE_LIMIT_EXCEEDED' && error.retryAfterSeconds) {
+      return `Hệ thống đang nhận quá nhiều yêu cầu, vui lòng thử lại sau ${error.retryAfterSeconds} giây.`;
+    }
+    return MESSAGES[error.code] ?? 'Yêu cầu không thành công, vui lòng thử lại.';
+  }
   if (error instanceof NetworkError) return `${error.message}. Kiểm tra kết nối rồi thử lại.`;
   return 'Đã xảy ra lỗi không mong muốn.';
 }

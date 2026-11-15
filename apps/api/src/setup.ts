@@ -11,6 +11,39 @@ export interface ConfigureAppOptions {
   rateLimitMax?: number;
   rateLimitWindowMs?: number;
   enableProductionLogging?: boolean;
+  trustProxy?: boolean | number | string;
+}
+
+const DEFAULT_PRODUCTION_RATE_LIMIT_MAX = 1000;
+const DEFAULT_TEST_RATE_LIMIT_MAX = 5000;
+
+export function resolveRateLimitMax(override?: number): number {
+  if (override !== undefined) return override;
+  if (process.env.RATE_LIMIT_MAX) {
+    const parsed = Number(process.env.RATE_LIMIT_MAX);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return process.env.NODE_ENV === 'test'
+    ? DEFAULT_TEST_RATE_LIMIT_MAX
+    : DEFAULT_PRODUCTION_RATE_LIMIT_MAX;
+}
+
+export function resolveCorsOrigin(raw = process.env.FRONTEND_URL): string {
+  const value = raw?.trim().replace(/\/+$/, '');
+  return value || 'http://localhost:3000';
+}
+
+export function resolveTrustProxy(
+  override?: boolean | number | string,
+  rawEnv = process.env.TRUST_PROXY,
+): boolean | number | string {
+  if (override !== undefined) return override;
+  const trimmed = rawEnv?.trim();
+  if (!trimmed) return 1;
+  if (trimmed === 'false') return false;
+  if (trimmed === 'true') return true;
+  const asNumber = Number(trimmed);
+  return Number.isInteger(asNumber) && asNumber >= 0 ? asNumber : trimmed;
 }
 
 export function isExcludedRateLimitPath(urlPath: string): boolean {
@@ -65,17 +98,25 @@ export function configureApp(app: INestApplication, options?: ConfigureAppOption
     }),
   );
 
-  // 3. Global Prefix
+  // 3. Global Prefix & Reverse Proxy Trust (Render/proxy forwards client IP via X-Forwarded-For)
   app.setGlobalPrefix('api');
+  const httpInstance = app.getHttpAdapter()?.getInstance?.() as
+    | { set?: (setting: string, val: unknown) => void }
+    | undefined;
+  if (typeof httpInstance?.set === 'function') {
+    httpInstance.set('trust proxy', resolveTrustProxy(options?.trustProxy));
+  }
 
-  // 4. Rate Limiting
-  const maxRequests =
-    options?.rateLimitMax ??
-    (process.env.RATE_LIMIT_MAX
-      ? Number(process.env.RATE_LIMIT_MAX)
-      : process.env.NODE_ENV === 'test'
-        ? 5000
-        : 100);
+  // 4. CORS Configuration (must run before rate limiter so 429 responses include CORS headers)
+  app.enableCors({
+    origin: resolveCorsOrigin(),
+    credentials: false,
+    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key'],
+    exposedHeaders: ['Idempotency-Replayed', 'Retry-After'],
+  });
+
+  // 5. Rate Limiting
+  const maxRequests = resolveRateLimitMax(options?.rateLimitMax);
 
   const windowMs =
     options?.rateLimitWindowMs ??
@@ -103,14 +144,6 @@ export function configureApp(app: INestApplication, options?: ConfigureAppOption
       },
     }),
   );
-
-  // 5. CORS Configuration
-  app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
-    credentials: false,
-    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key'],
-    exposedHeaders: ['Idempotency-Replayed', 'Retry-After'],
-  });
 
   // 6. Global Filters & Validation Pipes
   app.useGlobalFilters(new ApiExceptionFilter());
